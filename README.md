@@ -21,20 +21,20 @@ The engine follows a modular architecture:
 ```mermaid
 graph LR
     subgraph Input/Output
-        A[Input Interface API<br/>(Player Actions)]
-        B[Output Interface API<br/>(State Changes, Events, Queries)]
+        A[Input Interface API<br/>Player Actions]
+        B[Output Interface API<br/>State Changes, Events, Queries]
     end
 
     subgraph Core Engine
-        C(Game Engine Orchestrator)
-        D[Game State Manager<br/>(Zones, Players, Cards)]
-        E[Rule Engine<br/>(Phases, Stack, Priority, SBAs, Combat)]
+        C[Game Engine Orchestrator]
+        D[Game State Manager<br/>Zones, Players, Cards]
+        E[Rule Engine<br/>Phases, Stack, Priority, SBAs, Combat]
         F[Action/Event Bus]
-        G[Card Logic Manager<br/>(Ability/Effect Registry & Execution)]
+        G[Card Logic Manager<br/>Ability/Effect Registry & Execution]
     end
 
     subgraph Data
-        H[Card Definition Store<br/>(JSON Data)]
+        H[Card Definition Store<br/>JSON Data]
     end
 
     A --> C
@@ -48,7 +48,7 @@ graph LR
     G -- Modifies --> D
     E -- Reads/Modifies --> D
     E -- Uses --> F
-    E -- Manages --> C[Priority/Turns]
+    E -- Manages --> C
 ```
 
 ### Key Modules:
