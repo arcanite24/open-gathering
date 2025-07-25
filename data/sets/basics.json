@@ -1,0 +1,57 @@
+[
+  {
+    "id": "basic_plains",
+    "name": "Plains",
+    "types": ["Land", "Plains"],
+    "abilities": [
+      {
+        "key": "inherent_ability_tap_add_mana",
+        "parameters": { "mana": "{W}" }
+      }
+    ]
+  },
+  {
+    "id": "basic_island",
+    "name": "Island",
+    "types": ["Land", "Island"],
+    "abilities": [
+      {
+        "key": "inherent_ability_tap_add_mana",
+        "parameters": { "mana": "{U}" }
+      }
+    ]
+  },
+  {
+    "id": "basic_swamp",
+    "name": "Swamp",
+    "types": ["Land", "Swamp"],
+    "abilities": [
+      {
+        "key": "inherent_ability_tap_add_mana",
+        "parameters": { "mana": "{B}" }
+      }
+    ]
+  },
+  {
+    "id": "basic_mountain",
+    "name": "Mountain",
+    "types": ["Land", "Mountain"],
+    "abilities": [
+      {
+        "key": "inherent_ability_tap_add_mana",
+        "parameters": { "mana": "{R}" }
+      }
+    ]
+  },
+  {
+    "id": "basic_forest",
+    "name": "Forest",
+    "types": ["Land", "Forest"],
+    "abilities": [
+      {
+        "key": "inherent_ability_tap_add_mana",
+        "parameters": { "mana": "{G}" }
+      }
+    ]
+  }
+]
