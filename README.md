@@ -189,11 +189,14 @@ Provide: Content of src/implementations/abilities/tap_add_mana.ts, relevant inte
 
 1. **Setup**: Initialize project, configure TypeScript, install testing framework (e.g., Jest). ✓
 2. **Core Interfaces**: Define fundamental interfaces (IGame, IPlayer, IZone, ICardInstance, IAbility, IEffect). ✓
-3. **Basic State**: Implement basic GameStateManager components.
-4. **Turn/Priority**: Implement TurnManager and PriorityManager.
+3. **Basic State**: Implement basic GameStateManager components. ✓
+4. **Turn/Priority**: Implement TurnManager and PriorityManager. ✓
 5. **Card Loading**: Implement CardDefinitionStore and JSON loading. ✓
-6. **Basic Actions**: Implement playLand action.
-7. **(Continue with Roadmap from original plan)**: Creatures, Combat, Stack, Basic Abilities, Triggers, etc.
+6. **Basic Actions**: Implement playLand action. ✓
+7. **Engine**: Implement basic Engine orchestrator. ✓
+8. **Simple Creatures**: Add JSON definitions for simple vanilla creatures. ✓
+9. **Cast Spell**: Implement cast spell action for simple creatures. ✓
+10. **(Continue with Roadmap from original plan)**: Combat, Stack Resolution, Basic Abilities, Triggers, etc.
 
 ## 8. Contributions
 

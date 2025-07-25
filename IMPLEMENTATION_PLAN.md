@@ -114,7 +114,7 @@
 
 **Verification:** Classes implement the interfaces; constructors work; basic methods function as expected; tests pass.
 
-### Task ID: STATE-02
+### Task ID: STATE-02 ✅ COMPLETED
 
 **Phase:** 1 - Basic Turn Structure & Actions
 
@@ -135,7 +135,7 @@
 
 **Verification:** Class implements the interface; constructor initializes state correctly (players, zones); getter methods work; tests pass.
 
-### Task ID: RULE-01
+### Task ID: RULE-01 ✅ COMPLETED
 
 **Phase:** 1 - Basic Turn Structure & Actions
 
@@ -157,7 +157,7 @@
 
 **Verification:** Class correctly cycles through phases/steps; updates gameState properties; tests pass.
 
-### Task ID: RULE-02
+### Task ID: RULE-02 ✅ COMPLETED
 
 **Phase:** 1 - Basic Turn Structure & Actions
 
@@ -178,7 +178,7 @@
 
 **Verification:** Priority correctly passes between players and can be set to the active player; tests pass.
 
-### Task ID: ACTION-01
+### Task ID: ACTION-01 ✅ COMPLETED
 
 **Phase:** 1 - Basic Turn Structure & Actions
 
@@ -208,7 +208,7 @@
 
 **Verification:** Legality checks are correct; state is updated correctly (card moves zone, land count increments); tests pass.
 
-### Task ID: ENGINE-01
+### Task ID: ENGINE-01 ✅ COMPLETED
 
 **Phase:** 1 - Basic Turn Structure & Actions
 
@@ -237,7 +237,7 @@
 
 ## Phase 2: Creatures & Combat (Selected Tasks)
 
-### Task ID: DATA-02
+### Task ID: DATA-02 ✅ COMPLETED
 
 **Phase:** 2 - Creatures & Combat
 
@@ -256,7 +256,7 @@
 
 **Verification:** JSON is valid and conforms to the schema; P/T values are correct.
 
-### Task ID: ACTION-02
+### Task ID: ACTION-02 ✅ COMPLETED
 
 **Phase:** 2 - Creatures & Combat
 
@@ -287,7 +287,7 @@
 
 **Verification:** Legality checks work; mana payment is correct; card moves to stack; tests pass.
 
-### Task ID: ZONE-01
+### Task ID: ZONE-01 ✅ COMPLETED
 
 **Phase:** 2 - Creatures & Combat (Prerequisite for ACTION-02)
 

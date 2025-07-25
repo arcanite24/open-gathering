@@ -1,0 +1,32 @@
+[
+  {
+    "id": "grizzly_bears",
+    "name": "Grizzly Bears",
+    "manaCost": "{1}{G}",
+    "cmc": 2,
+    "types": ["Creature"],
+    "subtypes": ["Bear"],
+    "power": "2",
+    "toughness": "2"
+  },
+  {
+    "id": "runeclaw_bear",
+    "name": "Runeclaw Bear",
+    "manaCost": "{1}{G}",
+    "cmc": 2,
+    "types": ["Creature"],
+    "subtypes": ["Bear"],
+    "power": "2",
+    "toughness": "2"
+  },
+  {
+    "id": "merfolk_of_the_pearl_trident",
+    "name": "Merfolk of the Pearl Trident",
+    "manaCost": "{U}",
+    "cmc": 1,
+    "types": ["Creature"],
+    "subtypes": ["Merfolk"],
+    "power": "1",
+    "toughness": "1"
+  }
+]

@@ -14,6 +14,8 @@ export interface ManaPool {
   G: number;
   /** Colorless/ generic mana */
   C: number;
+  /** Generic mana that can be paid with any color or colorless */
+  generic: number;
 }
 
 /**

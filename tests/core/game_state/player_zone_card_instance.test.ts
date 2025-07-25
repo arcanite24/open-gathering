@@ -8,7 +8,7 @@ describe('Player', () => {
     
     expect(player.id).toBe('player1');
     expect(player.life).toBe(20);
-    expect(player.manaPool).toEqual({ W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 });
+    expect(player.manaPool).toEqual({ W: 0, U: 0, B: 0, R: 0, G: 0, C: 0, generic: 0 });
     expect(player.handZoneId).toBe('hand_player1');
     expect(player.libraryZoneId).toBe('library_player1');
     expect(player.graveyardZoneId).toBe('graveyard_player1');

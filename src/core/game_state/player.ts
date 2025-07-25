@@ -39,7 +39,7 @@ export class Player implements IPlayer {
   constructor(id: string, life: number = 20) {
     this.id = id;
     this.life = life;
-    this.manaPool = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
+    this.manaPool = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0, generic: 0 };
     this.handZoneId = `hand_${id}`;
     this.libraryZoneId = `library_${id}`;
     this.graveyardZoneId = `graveyard_${id}`;

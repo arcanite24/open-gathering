@@ -1,1 +1,0 @@
-console.log("MTG Headless Engine - TypeScript Setup Complete");
