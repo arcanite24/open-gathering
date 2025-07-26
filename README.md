@@ -1,4 +1,4 @@
-# MTG Headless Engine (TypeScript)
+# Open Gathering
 
 ## 1. Project Overview
 
@@ -80,13 +80,12 @@ See docs/card_schema.md (to be created) for the detailed JSON structure. Example
 
 ```json
 {
-  "id": "mtgjson_uuid_or_similar", // Unique ID for the card definition
+  "id": "mtgjson_uuid_or_similar",
   "name": "Llanowar Elves",
   "manaCost": "{G}",
-  // ... other static properties
   "abilities": [
     {
-      "key": "activated_ability_tap_add_mana", // Key referencing code implementation
+      "key": "activated_ability_tap_add_mana",
       "parameters": { "mana": "{G}" }
     }
   ]
@@ -109,34 +108,8 @@ Fundamental game rules (turn progression, stack operation, priority, SBAs) are h
 
 Use clear, descriptive event names (e.g., EVENT_PHASE_CHANGED, EVENT_CREATURE_DIED, EVENT_SPELL_CAST). See src/core/events/README.md (to be created) for event definitions.
 
-## 4. Directory Structure (Proposed)
-
-```
-mtg-engine/
-├── src/
-│   ├── core/                 # Core engine modules (agnostic of specific cards)
-│   │   ├── game_state/       # Player, Zone, CardInstance, GameState classes/interfaces
-│   │   ├── rules/            # TurnManager, PriorityManager, StackManager, CombatManager, SBA Checker
-│   │   ├── events/           # EventBus, event definitions
-│   │   ├── abilities/        # Ability/Effect interfaces, base classes, AbilityRegistry
-│   │   └── engine.ts         # Main engine orchestrator class
-│   ├── implementations/      # Concrete implementations of abilities/effects
-│   │   ├── abilities/        # e.g., tap_add_mana.ts, etb_gain_life.ts
-│   │   └── effects/          # e.g., deal_damage.ts, draw_card.ts
-│   ├── interfaces/           # Input/Output API definitions
-│   ├── utils/                # Shared utility functions
-│   └── index.ts              # Main entry point for the engine module
-├── data/                     # Card definitions
-│   └── sets/                 # JSON files per set (e.g., m21.json)
-├── tests/                    # Unit and integration tests
-│   ├── core/
-│   ├── implementations/
-│   └── scenarios/            # End-to-end tests for specific interactions
-├── docs/                     # Documentation (like this README, schema definitions)
-├── package.json
-├── tsconfig.json
-└── README.md
-```
+## 4. Directory Structure
+> TBD
 
 ## 5. Testing Strategy
 
@@ -144,60 +117,3 @@ mtg-engine/
 - **Integration Tests**: Test the interaction between core modules (e.g., does casting a spell correctly use the stack, mana, and priority systems?).
 - **Scenario/Interaction Tests**: Test specific card interactions and complex game states to ensure rules accuracy, especially edge cases. Use known rulings as a guide.
 - **Test-Driven Development (TDD) / Behavior-Driven Development (BDD)**: Recommended where applicable, especially for rules and ability logic.
-
-## 6. How to Interact with LLMs (LLM Interaction Protocol)
-
-This section guides Large Language Models (like Google's Qwen or OpenAI's GPT) on how to assist with development.
-
-### Context Requirements
-
-LLMs should be provided with relevant sections of this README.md.
-
-For specific tasks, provide the code of relevant modules/interfaces (e.g., IAbility, AbilityRegistry, existing similar abilities).
-
-Clearly state the goal and the expected input/output.
-
-### Example LLM Tasks & Prompts
-
-#### Implement a New Ability
-
-Prompt: "Based on the MTG engine architecture defined in the README and the interfaces in src/core/abilities/, implement the TypeScript class for the triggered ability 'Whenever a creature you control dies, you gain 1 life'. The card data key for this ability is triggered_ability_creature_dies_gain_life. Place the implementation in src/implementations/abilities/creature_dies_gain_life.ts. Ensure it subscribes to the correct event from the Action/Event Bus and triggers the appropriate effect (assume an Effect_GainLife class exists or needs creating). Include necessary imports and basic unit tests in tests/implementations/abilities/creature_dies_gain_life.test.ts."
-
-Provide: README.md (sections 2, 3, 4), content of src/core/abilities/interfaces.ts, src/core/events/definitions.ts.
-
-#### Generate Card JSON
-
-Prompt: "Generate the JSON definition for the card 'Shock' (Deal 2 damage to any target, Instant, cost {R}) according to the schema described in the README (Section 3) and docs/card_schema.md. Assume an effect key effect_deal_damage exists."
-
-Provide: README.md (Section 3), docs/card_schema.md.
-
-#### Write Unit Tests
-
-Prompt: "Write Jest unit tests for the TapAddManaAbility class located at src/implementations/abilities/tap_add_mana.ts. Cover scenarios like: checking activation legality (is the creature tapped? summoning sick?), paying the tap cost, and verifying that the correct mana is added to the player's mana pool (assuming mock GameState and Player objects)."
-
-Provide: Content of src/implementations/abilities/tap_add_mana.ts, relevant interfaces (IActivatedAbility, IGameState, IPlayer), README.md (Section 5).
-
-### LLM Guidelines
-
-- Adhere strictly to the defined architecture and interfaces.
-- Use TypeScript best practices.
-- Generate code that is clear, commented where necessary, and testable.
-- Ask clarifying questions if the prompt or context is insufficient.
-- Prioritize implementing core logic correctly over handling every single MTG edge case unless specifically requested.
-
-## 7. Getting Started & Roadmap
-
-1. **Setup**: Initialize project, configure TypeScript, install testing framework (e.g., Jest). ✓
-2. **Core Interfaces**: Define fundamental interfaces (IGame, IPlayer, IZone, ICardInstance, IAbility, IEffect). ✓
-3. **Basic State**: Implement basic GameStateManager components. ✓
-4. **Turn/Priority**: Implement TurnManager and PriorityManager. ✓
-5. **Card Loading**: Implement CardDefinitionStore and JSON loading. ✓
-6. **Basic Actions**: Implement playLand action. ✓
-7. **Engine**: Implement basic Engine orchestrator. ✓
-8. **Simple Creatures**: Add JSON definitions for simple vanilla creatures. ✓
-9. **Cast Spell**: Implement cast spell action for simple creatures. ✓
-10. **(Continue with Roadmap from original plan)**: Combat, Stack Resolution, Basic Abilities, Triggers, etc.
-
-## 8. Contributions
-
-(Standard contribution guidelines can be added here later - e.g., code style, pull request process)

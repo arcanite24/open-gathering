@@ -62,8 +62,8 @@
 2. Define base interface IAbility with id: string, sourceCardInstanceId: string.
 3. Define interface ICost (base interface for costs like mana, tapping).
 4. Define interface IEffect with a method resolve(gameState: IGameState, context: EffectContext): IGameState; (Note: using immutable pattern - resolve returns new state). Define a basic EffectContext interface (e.g., { sourceCardInstanceId: string, targets?: Target[] }). Define Target type/interface.
-5. Define interface IActivatedAbility extends IAbility adding costs: ICost[], effect: IEffect, canActivate(gameState: IGameState, playerId: string): boolean, activate(gameState: IGameState, playerId: string, targets?: Target[]): void; (Note: activate likely queues the effect onto the stack).
-6. Define interface ITriggeredAbility extends IAbility adding triggerCondition: TriggerCondition (define TriggerCondition type/interface), effect: IEffect, checkTrigger(event: GameEvent, gameState: IGameState): boolean, resolve(gameState: IGameState): void; (queues effect). Define GameEvent type/interface (basic structure for now).
+5. Define interface IActivatedAbility extends IAbility adding costs: ICost[], effect: IEffect, canActivate(gameState: IGameState, playerId: string): boolean, activate(gameState: IGameState, playerId: string, targets?: Target[]): IGameState; (Note: activate likely queues the effect onto the stack).
+6. Define interface ITriggeredAbility extends IAbility adding triggerCondition: TriggerCondition (define TriggerCondition type/interface), effect: IEffect, checkTrigger(event: GameEvent, gameState: IGameState): boolean, resolve(gameState: IGameState): IGameState; (queues effect). Define GameEvent type/interface (basic structure for now).
 7. Define interface IStaticAbility extends IAbility adding applyEffect(gameState: IGameState): IGameState;, removeEffect(gameState: IGameState): IGameState;, getLayer(): number; (placeholder for layer system).
 8. Add basic JSDoc comments.
 
@@ -306,7 +306,7 @@
 
 **Verification:** Stack zone is created; card IDs can be added to it; tests pass.
 
-### Task ID: RULE-03
+### Task ID: RULE-03 ✅ COMPLETED
 
 **Phase:** 2 - Creatures & Combat
 
@@ -334,11 +334,9 @@
 
 **Verification:** Creature spell resolves correctly from stack to battlefield; summoning sickness is applied; priority manager calls resolution correctly; tests pass.
 
-**(Further Tasks in Phase 2):** Implement CombatManager (Declare Attackers/Blockers steps), SBA Checker (lethal damage), Mana Abilities (Tap for Mana), etc.
+## Phase 3: The Stack & Basic Spells/Abilities
 
-## Phase 3: The Stack & Basic Spells/Abilities (Selected Tasks)
-
-### Task ID: EVENT-01
+### Task ID: EVENT-01 ✅ COMPLETED
 
 **Phase:** 3 - Stack & Basic Spells/Abilities
 
@@ -361,7 +359,7 @@
 
 **Verification:** Can subscribe to events; emitting calls the correct listeners; unsubscribing works; tests pass.
 
-### Task ID: ABILITY-01
+### Task ID: ABILITY-01 ✅ COMPLETED
 
 **Phase:** 3 - Stack & Basic Spells/Abilities
 
@@ -388,3 +386,335 @@
 **Dependencies:** IFACE-02, STATE-01, STATE-02, RULE-03, DATA-01.
 
 **Verification:** Ability registers and can be instantiated; cost checks work; effect adds mana; activation resolves immediately; tests pass.
+
+### Task ID: RULE-04
+
+**Phase:** 3 - Stack & Basic Spells/Abilities
+
+**Goal:** Implement State-Based Actions (SBA) checker.
+
+**Input/Context:** IFACE-01, STATE-02, MTG SBA rules (lethal damage, 0 toughness, etc.).
+
+**Instructions:**
+1. Create src/core/rules/sba_checker.ts.
+2. Implement class SBAChecker.
+3. Implement checkAndApplySBAs(gameState: IGameState): IGameState. This method should:
+   - Check for creatures with lethal damage (damage >= toughness).
+   - Check for players with <= 0 life.
+   - Check for tokens that should cease to exist.
+   - Check for legend rule violations (if implemented).
+   - For each violation found, apply the appropriate state change (move card to graveyard, set player to lose, etc.).
+   - Return the updated game state.
+4. Integrate SBAChecker into the game flow (e.g., after stack resolution, after phases).
+5. Implement unit tests (sba_checker.test.ts) verifying correct identification and handling of SBAs.
+
+**Deliverables:** sba_checker.ts, sba_checker.test.ts.
+
+**Dependencies:** IFACE-01, STATE-02.
+
+**Verification:** SBAs are correctly identified and applied; game state is updated appropriately; tests pass.
+
+### Task ID: ACTION-03
+
+**Phase:** 3 - Stack & Basic Spells/Abilities
+
+**Goal:** Implement combat-related actions (declare attackers, declare blockers).
+
+**Input/Context:** IFACE-01, STATE-02, MTG combat rules.
+
+**Instructions:**
+1. Create src/core/actions/combat_actions.ts.
+2. Implement functions for declareAttackers(gameState: IGameState, playerId: string, attackers: string[]): IGameState and declareBlockers(gameState: IGameState, playerId: string, blockers: { blockerId: string, attackerId: string }[]): IGameState.
+3. Add combat-related properties to ICardInstance (attacking: boolean, blocking: boolean, blockedBy: string[], blocking: string).
+4. Update CardInstance class to include these new properties.
+5. Implement legality checks for combat actions (correct phase, correct player, valid creatures, etc.).
+6. Implement state changes for combat actions (marking creatures as attacking/blocking, establishing combat relationships).
+7. Implement unit tests (combat_actions.test.ts) covering combat declaration legality and state changes.
+
+**Deliverables:** combat_actions.ts, combat_actions.test.ts, updated ICardInstance/CardInstance.
+
+**Dependencies:** IFACE-01, STATE-01, STATE-02, RULE-01.
+
+**Verification:** Combat actions are legal only when appropriate; state changes correctly reflect combat relationships; tests pass.
+
+### Task ID: RULE-05
+
+**Phase:** 3 - Stack & Basic Spells/Abilities
+
+**Goal:** Implement CombatManager to handle combat damage steps.
+
+**Input/Context:** IFACE-01, STATE-02, ACTION-03, MTG combat damage rules.
+
+**Instructions:**
+1. Create src/core/rules/combat_manager.ts.
+2. Implement class CombatManager.
+3. Implement resolveCombatDamage(gameState: IGameState): IGameState. This method should:
+   - Calculate damage for each attacking creature (accounting for trample, first strike, double strike if implemented).
+   - Calculate damage for each blocking creature.
+   - Apply damage to creatures (mark damage, which will be checked by SBA).
+   - Handle combat damage to players.
+4. Integrate CombatManager with the TurnManager for proper combat phase progression.
+5. Implement unit tests (combat_manager.test.ts) verifying correct damage assignment and application.
+
+**Deliverables:** combat_manager.ts, combat_manager.test.ts.
+
+**Dependencies:** IFACE-01, STATE-02, ACTION-03, RULE-04.
+
+**Verification:** Combat damage is correctly calculated and applied; creatures take damage appropriately; tests pass.
+
+## Phase 4: Advanced Features
+
+### Task ID: ABILITY-02
+
+**Phase:** 4 - Advanced Features
+
+**Goal:** Implement triggered abilities.
+
+**Input/Context:** IFACE-02, EVENT-01, MTG triggered abilities.
+
+**Instructions:**
+1. Create src/implementations/abilities/triggered_ability_base.ts. Implement a base class for triggered abilities.
+2. Create src/implementations/abilities/specific_triggered_abilities.ts for sample triggered abilities (e.g., "When this creature dies, gain 1 life").
+3. Implement the triggered ability registration and check mechanism.
+4. Update the EventBus integration to check for triggered abilities when events are emitted.
+5. Implement unit tests for triggered ability triggering and resolution.
+
+**Deliverables:** triggered_ability_base.ts, specific_triggered_abilities.ts, updated event system integration, tests.
+
+**Dependencies:** IFACE-02, EVENT-01, ABILITY-01.
+
+**Verification:** Triggered abilities correctly trigger on appropriate events; effects are queued properly; tests pass.
+
+### Task ID: EFFECT-01
+
+**Phase:** 4 - Advanced Features
+
+**Goal:** Implement targeted effects system.
+
+**Input/Context:** IFACE-02, MTG targeted spells/abilities.
+
+**Instructions:**
+1. Create src/implementations/effects/targeted_effect_base.ts. Implement a base class for targeted effects.
+2. Enhance the IEffect interface to handle target selection.
+3. Implement target validation logic.
+4. Create sample targeted effects (e.g., "Destroy target creature").
+5. Implement unit tests for targeted effects.
+
+**Deliverables:** targeted_effect_base.ts, updated IEffect, target validation logic, sample effects, tests.
+
+**Dependencies:** IFACE-02, ABILITY-01.
+
+**Verification:** Targeted effects correctly validate targets; effects are applied to correct targets; tests pass.
+
+### Task ID: ABILITY-03
+
+**Phase:** 4 - Advanced Features
+
+**Goal:** Implement static abilities and continuous effects.
+
+**Input/Context:** IFACE-02, MTG static abilities and continuous effects.
+
+**Instructions:**
+1. Create src/implementations/abilities/static_ability_base.ts. Implement a base class for static abilities.
+2. Implement a layer system for continuous effects (Layer 1: Copy, Layer 2: Control, Layer 3: Text-changing, Layer 4: Type, Layer 5: Color, Layer 6: Abilities, Layer 7: Power/Toughness).
+3. Create sample static abilities (e.g., "Creatures you control get +1/+1").
+4. Implement application and removal of continuous effects.
+5. Implement unit tests for static abilities and continuous effects.
+
+**Deliverables:** static_ability_base.ts, layer system implementation, sample static abilities, tests.
+
+**Dependencies:** IFACE-02, ABILITY-01.
+
+**Verification:** Static abilities are correctly applied; continuous effects modify game state as expected; layer system works correctly; tests pass.
+
+## Phase 5: Complex Cards & Interactions
+
+### Task ID: DATA-03
+
+**Phase:** 5 - Complex Cards & Interactions
+
+**Goal:** Add JSON definitions for complex cards with abilities.
+
+**Input/Context:** docs/card_schema.md, DATA-01/02, MTG complex cards.
+
+**Instructions:**
+1. Create data/sets/complex_cards.json.
+2. Add entries for cards with triggered abilities, activated abilities, and static abilities.
+3. Ensure ability definitions are complete and correctly reference implementation keys.
+
+**Deliverables:** data/sets/complex_cards.json.
+
+**Dependencies:** DATA-01, DATA-02, ABILITY-01, ABILITY-02, ABILITY-03.
+
+**Verification:** JSON is valid and conforms to the schema; ability references are correct.
+
+### Task ID: ACTION-04
+
+**Phase:** 5 - Complex Cards & Interactions
+
+**Goal:** Implement advanced action types (activate ability, etc.).
+
+**Input/Context:** IFACE-02, ABILITY-01/02/03, MTG advanced actions.
+
+**Instructions:**
+1. Create src/core/actions/advanced_actions.ts.
+2. Implement activateAbility(gameState: IGameState, playerId: string, cardInstanceId: string, abilityId: string, targets?: Target[]): IGameState.
+3. Implement other advanced actions as needed.
+4. Add proper legality checks and cost payment for ability activation.
+5. Implement unit tests for advanced actions.
+
+**Deliverables:** advanced_actions.ts, tests.
+
+**Dependencies:** IFACE-01, IFACE-02, STATE-02, ABILITY-01/02/03.
+
+**Verification:** Advanced actions work correctly with complex abilities; legality checks are thorough; tests pass.
+
+## Phase 6: HTTP Server Foundation
+
+### Task ID: SERVER-01
+
+**Phase:** 6 - HTTP Server Foundation
+
+**Goal:** Lay the foundation for an HTTP server to expose the engine functionality.
+
+**Input/Context:** Existing engine, Express.js (or similar framework), REST API design principles.
+
+**Instructions:**
+1. Install Express.js (or chosen framework) and related dependencies.
+2. Create src/server/index.ts to set up the basic server structure.
+3. Define API routes for core game operations:
+   - POST /games - Create a new game
+   - GET /games/:id - Get game state
+   - POST /games/:id/actions - Submit an action to a game
+4. Implement basic request/response handling.
+5. Add error handling middleware.
+6. Implement unit tests for the server endpoints.
+
+**Deliverables:** Basic HTTP server with API endpoints, tests.
+
+**Dependencies:** ENGINE-01 and all previous tasks.
+
+**Verification:** Server starts successfully; API endpoints respond correctly; error handling works; tests pass.
+
+### Task ID: SERVER-02
+
+**Phase:** 6 - HTTP Server Foundation
+
+**Goal:** Implement game session management in the HTTP server.
+
+**Input/Context:** SERVER-01, in-memory storage, game state management.
+
+**Instructions:**
+1. Implement in-memory storage for active game sessions.
+2. Create a GameSessionManager class to handle creation, retrieval, and cleanup of game sessions.
+3. Add session timeout functionality.
+4. Implement proper cleanup of finished games.
+5. Add tests for session management.
+
+**Deliverables:** GameSessionManager, session storage mechanism, tests.
+
+**Dependencies:** SERVER-01.
+
+**Verification:** Game sessions are properly created, retrieved, and cleaned up; timeout works correctly; tests pass.
+
+## Phase 7: Server Robustness & Testing
+
+### Task ID: SERVER-03
+
+**Phase:** 7 - Server Robustness & Testing
+
+**Goal:** Make the HTTP server robust and production-ready.
+
+**Input/Context:** SERVER-01, SERVER-02, security best practices, performance considerations.
+
+**Instructions:**
+1. Add input validation for all API endpoints.
+2. Implement rate limiting to prevent abuse.
+3. Add request logging for debugging and monitoring.
+4. Implement proper CORS handling.
+5. Add health check endpoint.
+6. Add comprehensive error handling with appropriate HTTP status codes.
+7. Implement proper shutdown handling.
+8. Add integration tests for the complete server workflow.
+
+**Deliverables:** Robust HTTP server with security and performance enhancements, comprehensive tests.
+
+**Dependencies:** SERVER-01, SERVER-02.
+
+**Verification:** Server handles invalid input gracefully; rate limiting works; logging is appropriate; CORS is handled; health check works; shutdown is clean; integration tests pass.
+
+### Task ID: SERVER-04
+
+**Phase:** 7 - Server Robustness & Testing
+
+**Goal:** Add WebSocket support for real-time game updates.
+
+**Input/Context:** SERVER-01, SERVER-02, SERVER-03, WebSocket protocol.
+
+**Instructions:**
+1. Install WebSocket library (e.g., ws or socket.io).
+2. Implement WebSocket endpoint for real-time game state updates.
+3. Add client connection management.
+4. Implement broadcasting of game state changes to connected clients.
+5. Add authentication/authorization for WebSocket connections.
+6. Add tests for WebSocket functionality.
+
+**Deliverables:** WebSocket support for real-time updates, tests.
+
+**Dependencies:** SERVER-01, SERVER-02, SERVER-03.
+
+**Verification:** WebSocket connections are established correctly; game state updates are broadcast; authentication works; tests pass.
+
+## Phase 8: Visual Testing Tooling
+
+### Task ID: TOOL-01
+
+**Phase:** 8 - Visual Testing Tooling
+
+**Goal:** Create a CLI tool for visually testing the engine.
+
+**Input/Context:** Existing engine, command-line interface design.
+
+**Instructions:**
+1. Create src/cli/index.ts for the CLI entry point.
+2. Implement commands for:
+   - Starting a new game
+   - Displaying current game state
+   - Submitting actions
+   - Loading predefined scenarios
+3. Implement a text-based game state display.
+4. Add command history and autocomplete.
+5. Implement save/load functionality for game states.
+6. Add tests for CLI functionality.
+
+**Deliverables:** CLI tool for testing the engine, tests.
+
+**Dependencies:** ENGINE-01 and all previous engine tasks.
+
+**Verification:** CLI commands work correctly; game state is displayed properly; actions can be submitted; save/load works; tests pass.
+
+### Task ID: TOOL-02
+
+**Phase:** 8 - Visual Testing Tooling
+
+**Goal:** Create a web-based visual testing interface.
+
+**Input/Context:** SERVER-01/02/03/04, frontend framework (e.g., React), web development.
+
+**Instructions:**
+1. Choose a frontend framework (e.g., React, Vue).
+2. Create a basic web interface with:
+   - Game board display
+   - Player information panels
+   - Action submission controls
+   - Game state visualization
+3. Implement WebSocket client to receive real-time updates.
+4. Add scenario loading functionality.
+5. Implement a simple AI player for testing.
+6. Add tests for the web interface components.
+
+**Deliverables:** Web-based visual testing interface, tests.
+
+**Dependencies:** SERVER-01, SERVER-02, SERVER-03, SERVER-04.
+
+**Verification:** Web interface displays game state correctly; actions can be submitted through UI; WebSocket updates work; scenario loading works; AI player functions; tests pass.

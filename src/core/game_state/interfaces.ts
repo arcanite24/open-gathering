@@ -159,6 +159,12 @@ export interface ICardInstance {
   
   /** IDs of activated abilities this card has */
   activatedAbilities: string[];
+  
+  /** Turn when the card entered the battlefield (for summoning sickness) */
+  turnEnteredBattlefield?: number;
+  
+  /** Whether the card has summoning sickness */
+  hasSummoningSickness?: boolean;
 }
 
 /**

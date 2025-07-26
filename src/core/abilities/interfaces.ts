@@ -15,7 +15,21 @@ export interface IAbility {
  * Base interface for costs (mana, tapping, etc.).
  */
 export interface ICost {
-  // Marker interface for costs
+  /**
+   * Checks if the cost can be paid.
+   * @param gameState The current game state
+   * @param sourceCardInstanceId The ID of the source card instance
+   * @returns True if the cost can be paid, false otherwise
+   */
+  canPay(gameState: IGameState, sourceCardInstanceId: string): boolean;
+  
+  /**
+   * Pays the cost.
+   * @param gameState The current game state
+   * @param sourceCardInstanceId The ID of the source card instance
+   * @returns The updated game state
+   */
+  pay(gameState: IGameState, sourceCardInstanceId: string): IGameState;
 }
 
 /**
@@ -79,8 +93,9 @@ export interface IActivatedAbility extends IAbility {
    * @param gameState The current game state
    * @param playerId The ID of the player activating the ability
    * @param targets Optional targets for the ability
+   * @returns The updated game state
    */
-  activate(gameState: IGameState, playerId: string, targets?: Target[]): void;
+  activate(gameState: IGameState, playerId: string, targets?: Target[]): IGameState;
 }
 
 /**
@@ -126,8 +141,9 @@ export interface ITriggeredAbility extends IAbility {
   /**
    * Resolves this triggered ability.
    * @param gameState The current game state
+   * @returns The updated game state
    */
-  resolve(gameState: IGameState): void;
+  resolve(gameState: IGameState): IGameState;
 }
 
 /**

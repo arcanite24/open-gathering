@@ -36,6 +36,12 @@ export class CardInstance implements ICardInstance {
   
   /** IDs of activated abilities this card has */
   activatedAbilities: string[];
+  
+  /** Turn when the card entered the battlefield (for summoning sickness) */
+  turnEnteredBattlefield?: number;
+  
+  /** Whether the card has summoning sickness */
+  hasSummoningSickness?: boolean;
 
   /**
    * Creates a new CardInstance.
@@ -63,5 +69,8 @@ export class CardInstance implements ICardInstance {
     this.staticAbilities = [];
     this.triggeredAbilities = [];
     this.activatedAbilities = [];
+    // Initialize summoning sickness fields as undefined
+    this.turnEnteredBattlefield = undefined;
+    this.hasSummoningSickness = undefined;
   }
 }
