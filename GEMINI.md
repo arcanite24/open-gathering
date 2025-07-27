@@ -50,3 +50,4 @@ When helping with implementation tasks, please:
 - Whenever you complete a task, update the relevant section in the README and IMPLEMENTATION_PLAN.md
 - Always run tests after making changes to ensure nothing is broken
 - Always check for linting and compile errors
+- Use enums and interfaces to define clear contracts for your code, avoid at all costs using magic strings or numbers

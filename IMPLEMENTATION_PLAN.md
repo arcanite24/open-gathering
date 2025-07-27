@@ -464,7 +464,7 @@
 
 ## Phase 4: Advanced Features
 
-### Task ID: ABILITY-02
+### Task ID: ABILITY-02 ✅ COMPLETED
 
 **Phase:** 4 - Advanced Features
 
@@ -485,7 +485,7 @@
 
 **Verification:** Triggered abilities correctly trigger on appropriate events; effects are queued properly; tests pass.
 
-### Task ID: EFFECT-01
+### Task ID: EFFECT-01 ✅ COMPLETED
 
 **Phase:** 4 - Advanced Features
 

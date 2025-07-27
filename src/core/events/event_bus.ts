@@ -1,17 +1,21 @@
+import { IGameState } from '../game_state/interfaces';
 import { GameEvent } from './event_types';
+
+type EventListener = (event: GameEvent, gameState: IGameState) => void;
+
 
 /**
  * Event bus for managing game events and listeners.
  */
 export class EventBus {
   /** Map of event types to listener functions */
-  private listeners: Map<string, Function[]>;
+  private listeners: Map<string, EventListener[]>;
   
   /**
    * Creates a new EventBus instance.
    */
   constructor() {
-    this.listeners = new Map<string, Function[]>();
+    this.listeners = new Map<string, EventListener[]>();
   }
   
   /**
@@ -19,7 +23,7 @@ export class EventBus {
    * @param eventType The type of event to listen for
    * @param listener The function to call when the event is emitted
    */
-  subscribe(eventType: string, listener: Function): void {
+  subscribe(eventType: string, listener: EventListener): void {
     if (!this.listeners.has(eventType)) {
       this.listeners.set(eventType, []);
     }
@@ -32,7 +36,7 @@ export class EventBus {
    * @param eventType The type of event to unsubscribe from
    * @param listener The function to unsubscribe
    */
-  unsubscribe(eventType: string, listener: Function): void {
+  unsubscribe(eventType: string, listener: EventListener): void {
     if (!this.listeners.has(eventType)) {
       return;
     }
@@ -48,17 +52,14 @@ export class EventBus {
   /**
    * Emits an event, calling all subscribed listeners.
    * @param event The event to emit
+   * @param gameState The current game state
    */
-  emit(event: GameEvent): void {
-    if (!this.listeners.has(event.type)) {
-      return;
-    }
-    
-    const listeners = this.listeners.get(event.type)!;
-    
-    // Call each listener with the event
-    for (const listener of listeners) {
-      listener(event);
+  emit(event: GameEvent, gameState: IGameState): void {
+    if (this.listeners.has(event.type)) {
+      const listeners = this.listeners.get(event.type)!;
+      for (const listener of listeners) {
+        listener(event, gameState);
+      }
     }
   }
 }
