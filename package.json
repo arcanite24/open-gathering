@@ -8,17 +8,39 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "dev": "ts-node src/index.ts"
+    "dev": "ts-node src/index.ts",
+    "server": "ts-node src/server_main.ts",
+    "server:dev": "ts-node --watch src/server_main.ts"
   },
-  "keywords": ["magic-the-gathering", "mtg", "game-engine", "typescript"],
+  "keywords": [
+    "magic-the-gathering",
+    "mtg",
+    "game-engine",
+    "typescript"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^24.1.0",
+    "@types/supertest": "^6.0.3",
     "jest": "^30.0.5",
+    "supertest": "^7.1.4",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/helmet": "^4.0.0",
+    "@types/joi": "^17.2.3",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.0.1",
+    "express-validator": "^7.2.1",
+    "helmet": "^8.1.0",
+    "joi": "^17.13.3"
   }
 }
