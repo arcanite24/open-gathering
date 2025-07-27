@@ -387,7 +387,7 @@
 
 **Verification:** Ability registers and can be instantiated; cost checks work; effect adds mana; activation resolves immediately; tests pass.
 
-### Task ID: RULE-04
+### Task ID: RULE-04 ✅ COMPLETED
 
 **Phase:** 3 - Stack & Basic Spells/Abilities
 
@@ -414,7 +414,7 @@
 
 **Verification:** SBAs are correctly identified and applied; game state is updated appropriately; tests pass.
 
-### Task ID: ACTION-03
+### Task ID: ACTION-03 ✅ COMPLETED
 
 **Phase:** 3 - Stack & Basic Spells/Abilities
 
@@ -437,7 +437,7 @@
 
 **Verification:** Combat actions are legal only when appropriate; state changes correctly reflect combat relationships; tests pass.
 
-### Task ID: RULE-05
+### Task ID: RULE-05 ✅ COMPLETED
 
 **Phase:** 3 - Stack & Basic Spells/Abilities
 
@@ -449,7 +449,7 @@
 1. Create src/core/rules/combat_manager.ts.
 2. Implement class CombatManager.
 3. Implement resolveCombatDamage(gameState: IGameState): IGameState. This method should:
-   - Calculate damage for each attacking creature (accounting for trample, first strike, double strike if implemented).
+   - Calculate damage for each attacking creature (accounting for trample, first strike, double strike if implemented (implement it if not already there)).
    - Calculate damage for each blocking creature.
    - Apply damage to creatures (mark damage, which will be checked by SBA).
    - Handle combat damage to players.
@@ -692,29 +692,3 @@
 **Dependencies:** ENGINE-01 and all previous engine tasks.
 
 **Verification:** CLI commands work correctly; game state is displayed properly; actions can be submitted; save/load works; tests pass.
-
-### Task ID: TOOL-02
-
-**Phase:** 8 - Visual Testing Tooling
-
-**Goal:** Create a web-based visual testing interface.
-
-**Input/Context:** SERVER-01/02/03/04, frontend framework (e.g., React), web development.
-
-**Instructions:**
-1. Choose a frontend framework (e.g., React, Vue).
-2. Create a basic web interface with:
-   - Game board display
-   - Player information panels
-   - Action submission controls
-   - Game state visualization
-3. Implement WebSocket client to receive real-time updates.
-4. Add scenario loading functionality.
-5. Implement a simple AI player for testing.
-6. Add tests for the web interface components.
-
-**Deliverables:** Web-based visual testing interface, tests.
-
-**Dependencies:** SERVER-01, SERVER-02, SERVER-03, SERVER-04.
-
-**Verification:** Web interface displays game state correctly; actions can be submitted through UI; WebSocket updates work; scenario loading works; AI player functions; tests pass.

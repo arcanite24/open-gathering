@@ -1,4 +1,6 @@
 import { IGameState } from '../game_state/interfaces';
+import { CombatManager } from './combat_manager';
+import { SBAChecker } from './sba_checker';
 
 // Define enums for Phases and Steps
 export enum Phase {

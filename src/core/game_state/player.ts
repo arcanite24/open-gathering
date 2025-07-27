@@ -31,6 +31,9 @@ export class Player implements IPlayer {
   /** Number of lands played this turn */
   landsPlayedThisTurn: number;
 
+  /** Whether the player has lost the game */
+  hasLost: boolean;
+
   /**
    * Creates a new Player instance.
    * @param id Unique identifier for the player
@@ -46,5 +49,6 @@ export class Player implements IPlayer {
     this.exileZoneId = `exile_${id}`;
     this.battlefieldZoneId = `battlefield_${id}`;
     this.landsPlayedThisTurn = 0;
+    this.hasLost = false;
   }
 }

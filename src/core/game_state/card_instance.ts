@@ -43,6 +43,18 @@ export class CardInstance implements ICardInstance {
   /** Whether the card has summoning sickness */
   hasSummoningSickness?: boolean;
 
+  /** Whether the card is currently attacking */
+  isAttacking?: boolean;
+
+  /** Whether the card is currently blocking */
+  isBlocking?: boolean;
+
+  /** The ID of the card this creature is blocking */
+  blocking?: string;
+
+  /** The IDs of the cards that are blocking this creature */
+  blockedBy?: string[];
+
   /**
    * Creates a new CardInstance.
    * @param id Unique runtime identifier for this card instance
@@ -69,8 +81,11 @@ export class CardInstance implements ICardInstance {
     this.staticAbilities = [];
     this.triggeredAbilities = [];
     this.activatedAbilities = [];
-    // Initialize summoning sickness fields as undefined
     this.turnEnteredBattlefield = undefined;
     this.hasSummoningSickness = undefined;
+    this.isAttacking = false;
+    this.isBlocking = false;
+    this.blocking = undefined;
+    this.blockedBy = [];
   }
 }

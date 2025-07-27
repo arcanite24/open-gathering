@@ -48,6 +48,9 @@ export interface IPlayer {
   
   /** Number of lands played this turn */
   landsPlayedThisTurn: number;
+
+  /** Whether the player has lost the game */
+  hasLost: boolean;
 }
 
 /**
@@ -165,6 +168,27 @@ export interface ICardInstance {
   
   /** Whether the card has summoning sickness */
   hasSummoningSickness?: boolean;
+
+  /** Whether the card is currently attacking */
+  isAttacking?: boolean;
+
+  /** Whether the card is currently blocking */
+  isBlocking?: boolean;
+
+  /** The ID of the card this creature is blocking */
+  blocking?: string;
+
+  /** The IDs of the cards that are blocking this creature */
+  blockedBy?: string[];
+
+  /** Whether the creature has first strike */
+  hasFirstStrike?: boolean;
+
+  /** Whether the creature has double strike */
+  hasDoubleStrike?: boolean;
+
+  /** Whether the creature has trample */
+  hasTrample?: boolean;
 }
 
 /**
