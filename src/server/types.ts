@@ -61,3 +61,27 @@ export interface ErrorResponse {
     /** HTTP status code */
     status: number;
 }
+
+/**
+ * WebSocket authentication request.
+ */
+export interface WebSocketAuthRequest {
+    /** Game ID to connect to */
+    gameId: string;
+    /** Player ID for authentication */
+    playerId: string;
+    /** Optional authentication token */
+    token?: string;
+}
+
+/**
+ * WebSocket connection statistics.
+ */
+export interface WebSocketStats {
+    /** Total number of connected clients */
+    totalClients: number;
+    /** Number of authenticated clients */
+    authenticatedClients: number;
+    /** Number of games with connected clients */
+    gamesWithClients: number;
+}

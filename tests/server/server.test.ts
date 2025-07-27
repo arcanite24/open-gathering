@@ -11,6 +11,17 @@ describe('Server API', () => {
         app = server.getApp();
     });
 
+    afterAll(async () => {
+        if (server) {
+            try {
+                await server.stop();
+            } catch (error) {
+                // Server might already be stopped, ignore errors
+                console.warn('Server cleanup warning:', error.message);
+            }
+        }
+    });
+
     describe('GET /health', () => {
         it('should return health status', async () => {
             const response = await request(app)

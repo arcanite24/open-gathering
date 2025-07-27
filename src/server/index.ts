@@ -1,14 +1,18 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import WebSocket from 'ws';
+import { createServer, Server as HttpServer } from 'http';
 import { GameSessionManager } from './game_session_manager';
+import { WebSocketManager } from './websocket_manager';
 import {
     CreateGameRequest,
     CreateGameResponse,
     GetGameStateResponse,
     SubmitActionRequest,
     SubmitActionResponse,
-    ErrorResponse
+    ErrorResponse,
+    WebSocketStats
 } from './types';
 import {
     apiRateLimit,
@@ -28,19 +32,45 @@ import {
  */
 export class Server {
     private app: express.Application;
+    private httpServer: HttpServer;
     private gameSessionManager: GameSessionManager;
+    private webSocketManager: WebSocketManager;
+    private webSocketServer: WebSocket.Server;
     private port: number;
-    private server: any;
     private isShuttingDown: boolean = false;
+    private cleanupInterval?: NodeJS.Timeout;
 
     constructor(port: number = 3000) {
         this.app = express();
         this.port = port;
         this.gameSessionManager = new GameSessionManager();
+        this.webSocketManager = new WebSocketManager();
 
+        // Create HTTP server
+        this.httpServer = createServer(this.app);
+
+        // Create WebSocket server
+        this.webSocketServer = new WebSocket.Server({
+            server: this.httpServer,
+            path: '/ws'
+        });
+
+        this.setupWebSocket();
         this.setupMiddleware();
         this.setupRoutes();
         this.setupErrorHandling();
+    }
+
+    /**
+     * Sets up WebSocket server and connection handling.
+     */
+    private setupWebSocket(): void {
+        this.webSocketServer.on('connection', (ws: WebSocket) => {
+            const clientId = this.webSocketManager.handleConnection(ws);
+            console.log(`New WebSocket connection: ${clientId}`);
+        });
+
+        console.log('WebSocket server configured on path /ws');
     }
 
     /**
@@ -130,6 +160,12 @@ export class Server {
         this.app.get('/stats', (req: Request, res: Response) => {
             const sessionStats = this.gameSessionManager.getSessionStats();
             res.json(sessionStats);
+        });
+
+        // WebSocket statistics endpoint
+        this.app.get('/ws/stats', (req: Request, res: Response) => {
+            const stats: WebSocketStats = this.webSocketManager.getStats();
+            res.json(stats);
         });
 
         // API routes with specific rate limiting
@@ -272,20 +308,39 @@ export class Server {
                 // Submit the action
                 session.engine.submitAction(playerId, action);
 
+                const newGameState = session.engine.getState();
                 const response: SubmitActionResponse = {
-                    gameState: session.engine.getState(),
+                    gameState: newGameState,
                     success: true
                 };
+
+                // Broadcast the successful action result to WebSocket clients
+                this.webSocketManager.broadcastActionResult(gameId, {
+                    success: true,
+                    gameState: newGameState,
+                    action,
+                    playerId
+                });
 
                 console.log(`Action submitted for game ${gameId}: ${action.type} by ${playerId}`);
                 res.json(response);
             } catch (actionError) {
                 // If the action failed, return the previous state with an error
+                const errorMessage = actionError instanceof Error ? actionError.message : 'Unknown action error';
                 const response: SubmitActionResponse = {
                     gameState: previousState,
                     success: false,
-                    error: actionError instanceof Error ? actionError.message : 'Unknown action error'
+                    error: errorMessage
                 };
+
+                // Broadcast the failed action result to WebSocket clients
+                this.webSocketManager.broadcastActionResult(gameId, {
+                    success: false,
+                    gameState: previousState,
+                    error: errorMessage,
+                    action,
+                    playerId
+                });
 
                 res.status(400).json(response);
             }
@@ -370,15 +425,19 @@ export class Server {
     start(): Promise<void> {
         return new Promise((resolve, reject) => {
             try {
-                this.server = this.app.listen(this.port, () => {
+                this.httpServer.listen(this.port, () => {
                     console.log(`MTG Game Engine server listening on port ${this.port}`);
+                    console.log(`WebSocket server available at ws://localhost:${this.port}/ws`);
                     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
                     console.log(`Process ID: ${process.pid}`);
 
                     // Start cleanup interval for expired sessions
-                    setInterval(() => {
+                    this.cleanupInterval = setInterval(() => {
                         this.gameSessionManager.cleanupExpiredSessions();
                     }, 5 * 60 * 1000); // Clean up every 5 minutes
+
+                    // Start WebSocket cleanup interval
+                    this.webSocketManager.startCleanupInterval();
 
                     // Setup graceful shutdown handlers
                     this.setupGracefulShutdown();
@@ -386,7 +445,7 @@ export class Server {
                     resolve();
                 });
 
-                this.server.on('error', (error: Error) => {
+                this.httpServer.on('error', (error: Error) => {
                     console.error('Server error:', error);
                     reject(error);
                 });
@@ -404,8 +463,11 @@ export class Server {
             console.log(`Received ${signal}, shutting down gracefully...`);
             this.isShuttingDown = true;
 
-            if (this.server) {
-                this.server.close((err?: Error) => {
+            // Close WebSocket connections first
+            this.webSocketManager.shutdown();
+
+            if (this.httpServer) {
+                this.httpServer.close((err?: Error) => {
                     if (err) {
                         console.error('Error during server shutdown:', err);
                         process.exit(1);
@@ -444,13 +506,24 @@ export class Server {
      */
     stop(): Promise<void> {
         return new Promise((resolve, reject) => {
-            if (!this.server) {
+            // If server was never started, just resolve
+            if (!this.httpServer || !this.httpServer.listening) {
                 resolve();
                 return;
             }
 
             this.isShuttingDown = true;
-            this.server.close((err?: Error) => {
+
+            // Clear cleanup interval
+            if (this.cleanupInterval) {
+                clearInterval(this.cleanupInterval);
+                this.cleanupInterval = undefined;
+            }
+
+            // Close WebSocket connections first
+            this.webSocketManager.shutdown();
+
+            this.httpServer.close((err?: Error) => {
                 if (err) {
                     reject(err);
                 } else {
