@@ -1,6 +1,8 @@
 import { Player } from '../../../src/core/game_state/player';
 import { Zone } from '../../../src/core/game_state/zone';
 import { CardInstance } from '../../../src/core/game_state/card_instance';
+import { ICardDefinition, IGameState } from '../../../src/core/game_state/interfaces';
+import { AbilityRegistry } from '../../../src/core/abilities/registry';
 
 describe('Player', () => {
   it('should create a player with default values', () => {
@@ -71,12 +73,34 @@ describe('Zone', () => {
 
 describe('CardInstance', () => {
   it('should create a card instance with initial values', () => {
+    const cardDefinition: ICardDefinition = {
+      id: 'card1',
+      name: 'Test Card',
+      types: ['Creature'],
+    };
+    const mockGameState: IGameState = {
+      players: new Map(),
+      zones: new Map(),
+      cardInstances: new Map(),
+      cardDefinitions: new Map(),
+      activePlayerId: 'player1',
+      priorityPlayerId: 'player1',
+      turn: 1,
+      phase: 'Main',
+      step: 'PreCombatMain',
+      stackZoneId: 'stack',
+    };
+    const mockAbilityRegistry = new AbilityRegistry();
+    mockAbilityRegistry.createAbilityInstance = jest.fn();
+
     const cardInstance = new CardInstance(
       'instance1',
-      'card1',
+      cardDefinition,
       'player1',
       'player1',
-      'hand_player1'
+      'hand_player1',
+      mockAbilityRegistry,
+      mockGameState
     );
     
     expect(cardInstance.id).toBe('instance1');

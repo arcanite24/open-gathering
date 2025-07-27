@@ -1,7 +1,8 @@
-import { IGameState, IPlayer, IZone, ICardInstance } from './interfaces';
+import { IGameState, IPlayer, IZone, ICardInstance, ICardDefinition } from './interfaces';
 import { Player } from './player';
 import { Zone } from './zone';
 import { CardInstance } from './card_instance';
+import { AbilityRegistry, initializeAbilityRegistry } from '../abilities/registry';
 
 /**
  * Implementation of the IGameState interface.
@@ -15,6 +16,9 @@ export class GameState implements IGameState {
   
   /** Map of card instance IDs to card instance objects */
   cardInstances: Map<string, ICardInstance>;
+  
+  /** Map of card definition IDs to card definition objects */
+  cardDefinitions: Map<string, ICardDefinition>;
   
   /** ID of the active player */
   activePlayerId: string;
@@ -33,6 +37,9 @@ export class GameState implements IGameState {
   
   /** ID of the stack zone */
   stackZoneId: string;
+
+  /** The ability registry */
+  abilityRegistry: AbilityRegistry;
 
   /**
    * Creates a new GameState.
@@ -71,6 +78,8 @@ export class GameState implements IGameState {
     
     // Initialize empty card instances map
     this.cardInstances = new Map<string, ICardInstance>();
+    this.cardDefinitions = new Map<string, ICardDefinition>();
+    this.abilityRegistry = initializeAbilityRegistry();
     
     // Set initial game state values
     this.activePlayerId = player1.id;

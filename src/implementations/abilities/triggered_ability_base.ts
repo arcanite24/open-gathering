@@ -51,6 +51,7 @@ export abstract class TriggeredAbilityBase implements ITriggeredAbility {
     // For now, we resolve it directly.
     return this.effect.resolve(gameState, {
       sourceCardInstanceId: this.sourceCardInstanceId,
+      cardDefinitions: gameState.cardDefinitions,
     });
   }
 }

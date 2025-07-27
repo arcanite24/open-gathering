@@ -1,7 +1,8 @@
-import { IAbility } from './interfaces';
+import { IAbility, IStaticAbility, ITriggeredAbility, IActivatedAbility } from './interfaces';
 import { IGameState } from '../game_state/interfaces';
 import { TapAddManaAbility } from '../../implementations/abilities/activated_tap_add_mana';
 import { WhenThisCreatureDiesGainLifeAbility } from '../../implementations/abilities/specific_triggered_abilities';
+import { CreaturesGetPlusOnePlusOne } from '../../implementations/abilities/creatures_get_plus_one_plus_one';
 
 /**
  * Type for factory functions that create ability instances.
@@ -86,6 +87,14 @@ export function initializeAbilityRegistry(): AbilityRegistry {
 
     // Create and return the ability
     return new WhenThisCreatureDiesGainLifeAbility(id, sourceCardInstanceId);
+  });
+
+  // Register the "Creatures you control get +N/+N" static ability
+  registry.registerAbility('creatures_get_plus_one_plus_one', (params, sourceCardInstanceId, gameState) => {
+    const id = `ability_${sourceCardInstanceId}_${Date.now()}`;
+    const power = params.power || 0;
+    const toughness = params.toughness || 0;
+    return new CreaturesGetPlusOnePlusOne(id, sourceCardInstanceId, power, toughness);
   });
 
   return registry;

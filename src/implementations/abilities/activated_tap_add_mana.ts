@@ -75,6 +75,6 @@ export class TapAddManaAbility implements IActivatedAbility {
     }
     
     // Resolve the effect immediately (mana abilities don't use the stack)
-    return this.effect.resolve(newState, { sourceCardInstanceId: this.sourceCardInstanceId });
+    return this.effect.resolve(newState, { sourceCardInstanceId: this.sourceCardInstanceId, cardDefinitions: newState.cardDefinitions });
   }
 }

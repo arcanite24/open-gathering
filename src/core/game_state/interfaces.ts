@@ -1,3 +1,6 @@
+import { IActivatedAbility, IStaticAbility, ITriggeredAbility } from '../abilities/interfaces';
+import { AbilityRegistry } from '../abilities/registry';
+
 /**
  * Represents a player's mana pool with colored mana amounts.
  */
@@ -95,6 +98,9 @@ export interface ICardDefinition {
   /** Card supertypes (e.g., ["Legendary"]) */
   supertypes?: string[];
   
+  /** Colors of the card */
+  colors?: string[];
+  
   /** Oracle text of the card */
   oracleText?: string;
   
@@ -130,6 +136,9 @@ export interface ICardDefinition {
  * Represents a specific instance of a card in the game state.
  */
 export interface ICardInstance {
+  /** The card definition for this instance */
+  definition: ICardDefinition;
+  
   /** Unique runtime identifier for this card instance */
   id: string;
   
@@ -154,14 +163,14 @@ export interface ICardInstance {
   /** Counters on this card, mapping counter type to count */
   counters: Map<string, number>;
   
-  /** IDs of static abilities this card has */
-  staticAbilities: string[];
+  /** Instances of static abilities this card has */
+  staticAbilities: IStaticAbility[];
   
-  /** IDs of triggered abilities this card has */
-  triggeredAbilities: string[];
+  /** Instances of triggered abilities this card has */
+  triggeredAbilities: ITriggeredAbility[];
   
-  /** IDs of activated abilities this card has */
-  activatedAbilities: string[];
+  /** Instances of activated abilities this card has */
+  activatedAbilities: IActivatedAbility[];
   
   /** Turn when the card entered the battlefield (for summoning sickness) */
   turnEnteredBattlefield?: number;
@@ -189,6 +198,14 @@ export interface ICardInstance {
 
   /** Whether the creature has trample */
   hasTrample?: boolean;
+
+  // Properties that can be modified by continuous effects
+  power?: string;
+  toughness?: string;
+  types?: string[];
+  subtypes?: string[];
+  supertypes?: string[];
+  colors?: string[];
 }
 
 /**
@@ -203,6 +220,9 @@ export interface IGameState {
   
   /** Map of card instance IDs to card instance objects */
   cardInstances: Map<string, ICardInstance>;
+  
+  /** Map of card definition IDs to card definition objects */
+  cardDefinitions: Map<string, ICardDefinition>;
   
   /** ID of the active player */
   activePlayerId: string;
@@ -221,4 +241,7 @@ export interface IGameState {
   
   /** ID of the stack zone */
   stackZoneId: string;
+
+  /** The ability registry */
+  abilityRegistry: AbilityRegistry;
 }

@@ -10,6 +10,7 @@ import { AbilityRegistry, initializeAbilityRegistry } from './abilities/registry
 import { GameEvent } from './events/event_types';
 import { ITriggeredAbility, IActivatedAbility, IStaticAbility } from './abilities/interfaces';
 import { SBAChecker } from './rules/sba_checker';
+import { ContinuousEffectProcessor } from './rules/continuous_effect_processor';
 
 // Define the Action type
 export type Action = 
@@ -27,9 +28,9 @@ export class Engine {
   private eventBus: EventBus;
   private abilityRegistry: AbilityRegistry;
   private sbaChecker: SBAChecker;
+  private continuousEffectProcessor: ContinuousEffectProcessor;
   private cardDefinitions: Map<string, ICardDefinition>;
   private lastGameState: IGameState;
-  private abilities: Map<string, ITriggeredAbility | IActivatedAbility | IStaticAbility>;
   
   /**
    * Creates a new Engine instance.
@@ -40,11 +41,11 @@ export class Engine {
     this.eventBus = new EventBus();
     this.abilityRegistry = initializeAbilityRegistry();
     this.sbaChecker = new SBAChecker();
+    this.continuousEffectProcessor = new ContinuousEffectProcessor();
     this.cardDefinitions = new Map();
     // gameState will be initialized in startGame
     this.gameState = {} as IGameState;
     this.lastGameState = {} as IGameState;
-    this.abilities = new Map();
 
     this.eventBus.subscribe('CREATURE_DIED', this.handleEvent.bind(this));
   }
@@ -96,6 +97,24 @@ export class Engine {
     const stackZone = new Zone('stack', 'Stack', 'game');
     zones.set(stackZone.id, stackZone);
     
+    // Create initial game state (temporary for ability creation)
+    this.gameState = {
+      players: new Map([
+        [player1.id, player1],
+        [player2.id, player2]
+      ]),
+      zones,
+      cardInstances: new Map(), // Empty for now, will be populated below
+      activePlayerId: player1.id,
+      priorityPlayerId: player1.id,
+      turn: 1,
+      phase: 'Beginning',
+      step: 'Untap',
+      stackZoneId: stackZone.id,
+      cardDefinitions: this.cardDefinitions,
+      abilityRegistry: this.abilityRegistry,
+    };
+
     // Create card instances and populate libraries
     const cardInstances = new Map<string, ICardInstance>();
     
@@ -105,31 +124,12 @@ export class Engine {
       const cardId = `p1_card_${index}`;
       const cardInstance = new CardInstance(
         cardId,
-        cardDef.id,
+        cardDef,
         player1.id,
         player1.id,
-        p1LibraryZone.id
+        p1LibraryZone.id,
+        this.gameState // Pass current (temporary) game state for ability creation
       );
-      if (cardDef.abilities) {
-        for (const abilityDef of cardDef.abilities) {
-          const ability = this.abilityRegistry.createAbilityInstance(
-            abilityDef.key,
-            abilityDef.parameters,
-            cardId,
-            this.gameState
-          );
-          if (ability) {
-            this.abilities.set(ability.id, ability as ITriggeredAbility);
-            if ((ability as ITriggeredAbility).triggerCondition) {
-              cardInstance.triggeredAbilities.push(ability.id);
-            } else if ((ability as IActivatedAbility).activate) {
-              cardInstance.activatedAbilities.push(ability.id);
-            } else {
-              cardInstance.staticAbilities.push(ability.id);
-            }
-          }
-        }
-      }
       cardInstances.set(cardId, cardInstance);
       p1LibraryCards.push(cardId);
     });
@@ -141,54 +141,28 @@ export class Engine {
       const cardId = `p2_card_${index}`;
       const cardInstance = new CardInstance(
         cardId,
-        cardDef.id,
+        cardDef,
         player2.id,
         player2.id,
-        p2LibraryZone.id
+        p2LibraryZone.id,
+        this.gameState // Pass current (temporary) game state for ability creation
       );
-      if (cardDef.abilities) {
-        for (const abilityDef of cardDef.abilities) {
-          const ability = this.abilityRegistry.createAbilityInstance(
-            abilityDef.key,
-            abilityDef.parameters,
-            cardId,
-            this.gameState
-          );
-          if (ability) {
-            this.abilities.set(ability.id, ability as ITriggeredAbility);
-            if ((ability as ITriggeredAbility).triggerCondition) {
-              cardInstance.triggeredAbilities.push(ability.id);
-            } else if ((ability as IActivatedAbility).activate) {
-              cardInstance.activatedAbilities.push(ability.id);
-            } else {
-              cardInstance.staticAbilities.push(ability.id);
-            }
-          }
-        }
-      }
       cardInstances.set(cardId, cardInstance);
       p2LibraryCards.push(cardId);
     });
     p2LibraryZone.cards = p2LibraryCards;
     
-    // Create initial game state
+    // Update game state with populated card instances
     this.gameState = {
-      players: new Map([
-        [player1.id, player1],
-        [player2.id, player2]
-      ]),
-      zones,
+      ...this.gameState,
       cardInstances,
-      activePlayerId: player1.id,
-      priorityPlayerId: player1.id,
-      turn: 1,
-      phase: 'Beginning',
-      step: 'Untap',
-      stackZoneId: stackZone.id
     };
     
     // Draw initial hands (7 cards each)
     this.drawInitialHands();
+
+    // Apply continuous effects after initial state setup
+    this.gameState = this.continuousEffectProcessor.applyContinuousEffects(this.gameState);
   }
   
   /**
@@ -255,6 +229,9 @@ export class Engine {
 
     this.lastGameState = this.gameState;
     
+    // Remove continuous effects before applying action to get a clean state
+    this.gameState = this.continuousEffectProcessor.removeContinuousEffects(this.gameState);
+
     // Process the action based on its type
     switch (action.type) {
       case 'PLAY_LAND':
@@ -277,6 +254,9 @@ export class Engine {
         this.gameState = this.priorityManager.setActivePlayerPriority(this.gameState);
         break;
     }
+
+    // Re-apply continuous effects after action and before SBA/event checks
+    this.gameState = this.continuousEffectProcessor.applyContinuousEffects(this.gameState);
 
     this.checkStateChangesAndEmitEvents(this.lastGameState, this.gameState);
     this.gameState = this.sbaChecker.checkAndApplySBAs(this.gameState, this.cardDefinitions);
@@ -314,8 +294,7 @@ export class Engine {
   private handleEvent(event: GameEvent, gameState: IGameState): void {
     let newState = gameState;
     for (const card of gameState.cardInstances.values()) {
-      for (const abilityId of card.triggeredAbilities) {
-        const ability = this.abilities.get(abilityId) as ITriggeredAbility;
+      for (const ability of card.triggeredAbilities) {
         if (ability && ability.checkTrigger(event, newState)) {
           newState = ability.resolve(newState);
         }

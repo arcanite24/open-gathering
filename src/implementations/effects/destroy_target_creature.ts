@@ -12,16 +12,16 @@ export class DestroyTargetCreatureEffect extends TargetedEffectBase {
     if (!target.cardInstanceId) {
       return false;
     }
-    const card = gameState.getCardInstance(target.cardInstanceId);
+    const card = gameState.cardInstances.get(target.cardInstanceId);
     if (!card) {
       return false;
     }
-    const zone = gameState.getZone(card.currentZoneId);
+    const zone = gameState.zones.get(card.currentZoneId);
     if (!zone || zone.name !== 'Battlefield') {
       return false;
     }
-    const cardDefinition = context.cardDefinitions.get(card.definitionId);
-    if (!cardDefinition || !cardDefinition.types.includes('Creature')) {
+    const cardDefinition = gameState.cardDefinitions.get(card.definitionId);
+    if (!cardDefinition || !cardDefinition.types || !cardDefinition.types.includes('Creature')) {
       return false;
     }
     return true;
@@ -32,34 +32,44 @@ export class DestroyTargetCreatureEffect extends TargetedEffectBase {
       return gameState;
     }
 
-    // Deep clone the game state to maintain immutability
-    const newState = structuredClone(gameState);
-
     const targetCardId = context.targets![0].cardInstanceId!;
-    const card = newState.cardInstances.get(targetCardId);
-    if (!card) {
-      // Should not happen if validateTargets passed
+    const originalCard = gameState.cardInstances.get(targetCardId);
+    if (!originalCard) {
       return gameState;
     }
 
-    const owner = newState.players.get(card.ownerPlayerId);
+    const owner = gameState.players.get(originalCard.ownerPlayerId);
     if (!owner) {
       return gameState;
     }
 
-    const battlefieldZone = newState.zones.get(card.currentZoneId) as Zone;
-    const graveyardZone = newState.zones.get(owner.graveyardZoneId) as Zone;
+    const originalBattlefield = gameState.zones.get(originalCard.currentZoneId) as Zone;
+    const originalGraveyard = gameState.zones.get(owner.graveyardZoneId) as Zone;
 
-    // Modify the cloned state
-    battlefieldZone.cards = battlefieldZone.cards.filter(id => id !== card.id);
-    graveyardZone.cards.push(card.id);
-    card.currentZoneId = graveyardZone.id;
+    // Create new card and zone objects for the ones that are changing
+    const newCard = { ...originalCard, currentZoneId: originalGraveyard.id };
+    const newBattlefield = {
+        ...originalBattlefield,
+        cards: originalBattlefield.cards.filter(id => id !== originalCard.id)
+    };
+    const newGraveyard = {
+        ...originalGraveyard,
+        cards: [...originalGraveyard.cards, originalCard.id]
+    };
 
-    // Update the maps in the new state
-    newState.zones.set(battlefieldZone.id, battlefieldZone);
-    newState.zones.set(graveyardZone.id, graveyardZone);
-    newState.cardInstances.set(card.id, card);
+    // Create new maps for cardInstances and zones
+    const newCardInstances = new Map(gameState.cardInstances);
+    newCardInstances.set(newCard.id, newCard);
 
-    return newState;
+    const newZones = new Map(gameState.zones);
+    newZones.set(newBattlefield.id, newBattlefield);
+    newZones.set(newGraveyard.id, newGraveyard);
+
+    // Return the new game state
+    return {
+        ...gameState,
+        cardInstances: newCardInstances,
+        zones: newZones,
+    };
   }
 }

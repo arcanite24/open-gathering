@@ -123,7 +123,9 @@ export class TurnManager {
       turn: gameState.turn,
       phase: gameState.phase,
       step: gameState.step,
-      stackZoneId: gameState.stackZoneId
+      stackZoneId: gameState.stackZoneId,
+      cardDefinitions: gameState.cardDefinitions,
+      abilityRegistry: gameState.abilityRegistry,
     };
   }
 }

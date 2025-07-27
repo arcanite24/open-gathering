@@ -49,5 +49,6 @@ When helping with implementation tasks, please:
 ## Extra instructions
 - Whenever you complete a task, update the relevant section in the README and IMPLEMENTATION_PLAN.md
 - Always run tests after making changes to ensure nothing is broken
-- Always check for linting and compile errors
+- Always check for linting and compile errors. Use `npx tsc --noEmit` to check for TypeScript errors without generating output files.
+- When creating new tests, use `npx tsc --noEmit -p tsconfig.test.json` to ensure they compile correctly.
 - Use enums and interfaces to define clear contracts for your code, avoid at all costs using magic strings or numbers

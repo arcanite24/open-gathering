@@ -184,5 +184,48 @@ export interface IStaticAbility extends IAbility {
    * Gets the layer at which this static ability applies.
    * @returns The layer number
    */
-  getLayer(): number;
+  getLayer(): EffectLayer;
+}
+
+/**
+ * Defines the layers for continuous effects, as per MTG rules.
+ * Effects are applied in ascending order of layer number.
+ */
+export enum EffectLayer {
+  /** Layer 1: Copying effects */
+  Copy = 1,
+  /** Layer 2: Control-changing effects */
+  Control = 2,
+  /** Layer 3: Text-changing effects */
+  Text = 3,
+  /** Layer 4: Type-changing effects */
+  Type = 4,
+  /** Layer 5: Color-changing effects */
+  Color = 5,
+  /** Layer 6: Ability-adding/removing effects */
+  Abilities = 6,
+  /** Layer 7: Power/Toughness-changing effects */
+  PowerToughness = 7,
+}
+
+/**
+ * Interface for a continuous effect that can be applied and removed from the game state.
+ */
+export interface IContinuousEffect {
+  /** The layer at which this effect applies. */
+  layer: EffectLayer;
+
+  /**
+   * Applies the continuous effect to the game state.
+   * @param gameState The current game state.
+   * @returns The new game state with the effect applied.
+   */
+  apply(gameState: IGameState): IGameState;
+
+  /**
+   * Removes the continuous effect from the game state.
+   * @param gameState The current game state.
+   * @returns The new game state with the effect removed.
+   */
+  remove(gameState: IGameState): IGameState;
 }
