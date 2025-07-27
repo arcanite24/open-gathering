@@ -8,15 +8,18 @@ import { canPlayLand, executePlayLand } from './actions/play_land';
 import { EventBus } from './events/event_bus';
 import { AbilityRegistry, initializeAbilityRegistry } from './abilities/registry';
 import { GameEvent } from './events/event_types';
-import { ITriggeredAbility, IActivatedAbility, IStaticAbility } from './abilities/interfaces';
+import { ITriggeredAbility, IActivatedAbility, IStaticAbility, Target } from './abilities/interfaces';
 import { SBAChecker } from './rules/sba_checker';
 import { ContinuousEffectProcessor } from './rules/continuous_effect_processor';
+import { activateAbility } from './actions/advanced_actions';
 
 // Define the Action type
-export type Action = 
+export type Action =
   | { type: 'PLAY_LAND', cardId: string }
   | { type: 'PASS_PRIORITY' }
-  | { type: 'ADVANCE_TURN' };
+  | { type: 'ADVANCE_TURN' }
+  | { type: 'ACTIVATE_ABILITY', cardId: string, abilityId: string, targets?: Target[] }
+  | { type: 'CAST_SPELL', cardId: string, targets?: Target[] };
 
 /**
  * The main engine orchestrator class.
@@ -31,7 +34,7 @@ export class Engine {
   private continuousEffectProcessor: ContinuousEffectProcessor;
   private cardDefinitions: Map<string, ICardDefinition>;
   private lastGameState: IGameState;
-  
+
   /**
    * Creates a new Engine instance.
    */
@@ -49,7 +52,7 @@ export class Engine {
 
     this.eventBus.subscribe('CREATURE_DIED', this.handleEvent.bind(this));
   }
-  
+
   /**
    * Initializes a new game with the provided decks.
    * @param player1Deck Player 1's deck
@@ -63,40 +66,40 @@ export class Engine {
     // Create players
     const player1 = new Player('player1');
     const player2 = new Player('player2');
-    
+
     // Create zones for both players
     const zones = new Map<string, IZone>();
-    
+
     // Create zones for player 1
     const p1HandZone = new Zone(player1.handZoneId, 'Hand', player1.id);
     const p1LibraryZone = new Zone(player1.libraryZoneId, 'Library', player1.id);
     const p1GraveyardZone = new Zone(player1.graveyardZoneId, 'Graveyard', player1.id);
     const p1ExileZone = new Zone(player1.exileZoneId, 'Exile', player1.id);
     const p1BattlefieldZone = new Zone(player1.battlefieldZoneId, 'Battlefield', player1.id);
-    
+
     zones.set(p1HandZone.id, p1HandZone);
     zones.set(p1LibraryZone.id, p1LibraryZone);
     zones.set(p1GraveyardZone.id, p1GraveyardZone);
     zones.set(p1ExileZone.id, p1ExileZone);
     zones.set(p1BattlefieldZone.id, p1BattlefieldZone);
-    
+
     // Create zones for player 2
     const p2HandZone = new Zone(player2.handZoneId, 'Hand', player2.id);
     const p2LibraryZone = new Zone(player2.libraryZoneId, 'Library', player2.id);
     const p2GraveyardZone = new Zone(player2.graveyardZoneId, 'Graveyard', player2.id);
     const p2ExileZone = new Zone(player2.exileZoneId, 'Exile', player2.id);
     const p2BattlefieldZone = new Zone(player2.battlefieldZoneId, 'Battlefield', player2.id);
-    
+
     zones.set(p2HandZone.id, p2HandZone);
     zones.set(p2LibraryZone.id, p2LibraryZone);
     zones.set(p2GraveyardZone.id, p2GraveyardZone);
     zones.set(p2ExileZone.id, p2ExileZone);
     zones.set(p2BattlefieldZone.id, p2BattlefieldZone);
-    
+
     // Create stack zone
     const stackZone = new Zone('stack', 'Stack', 'game');
     zones.set(stackZone.id, stackZone);
-    
+
     // Create initial game state (temporary for ability creation)
     this.gameState = {
       players: new Map([
@@ -117,7 +120,7 @@ export class Engine {
 
     // Create card instances and populate libraries
     const cardInstances = new Map<string, ICardInstance>();
-    
+
     // Process player 1's deck
     const p1LibraryCards: string[] = [];
     player1Deck.forEach((cardDef, index) => {
@@ -134,7 +137,7 @@ export class Engine {
       p1LibraryCards.push(cardId);
     });
     p1LibraryZone.cards = p1LibraryCards;
-    
+
     // Process player 2's deck
     const p2LibraryCards: string[] = [];
     player2Deck.forEach((cardDef, index) => {
@@ -151,20 +154,20 @@ export class Engine {
       p2LibraryCards.push(cardId);
     });
     p2LibraryZone.cards = p2LibraryCards;
-    
+
     // Update game state with populated card instances
     this.gameState = {
       ...this.gameState,
       cardInstances,
     };
-    
+
     // Draw initial hands (7 cards each)
     this.drawInitialHands();
 
     // Apply continuous effects after initial state setup
     this.gameState = this.continuousEffectProcessor.applyContinuousEffects(this.gameState);
   }
-  
+
   /**
    * Draws initial hands for both players.
    */
@@ -175,7 +178,7 @@ export class Engine {
       this.drawCard('player2');
     }
   }
-  
+
   /**
    * Draws a card for a player.
    * @param playerId The ID of the player drawing a card
@@ -183,22 +186,22 @@ export class Engine {
   private drawCard(playerId: string): void {
     const player = this.gameState.players.get(playerId);
     if (!player) return;
-    
+
     const libraryZone = this.gameState.zones.get(player.libraryZoneId);
     const handZone = this.gameState.zones.get(player.handZoneId);
-    
+
     if (!libraryZone || !handZone || libraryZone.cards.length === 0) {
       // Player cannot draw a card - deck is empty
       // In a full implementation, this would cause the player to lose
       return;
     }
-    
+
     // Take the first card from the library (top of the deck)
     const cardId = libraryZone.cards.shift();
     if (cardId) {
       // Add it to the player's hand
       handZone.cards.push(cardId);
-      
+
       // Update the card's zone
       const cardInstance = this.gameState.cardInstances.get(cardId);
       if (cardInstance) {
@@ -206,7 +209,7 @@ export class Engine {
       }
     }
   }
-  
+
   /**
    * Returns the current game state.
    * @returns The current game state
@@ -214,7 +217,7 @@ export class Engine {
   getState(): IGameState {
     return this.gameState;
   }
-  
+
   /**
    * Submits an action from a player.
    * @param playerId The ID of the player submitting the action
@@ -228,7 +231,7 @@ export class Engine {
     }
 
     this.lastGameState = this.gameState;
-    
+
     // Remove continuous effects before applying action to get a clean state
     this.gameState = this.continuousEffectProcessor.removeContinuousEffects(this.gameState);
 
@@ -241,17 +244,37 @@ export class Engine {
           this.gameState = executePlayLand(this.gameState, playerId, action.cardId);
         }
         break;
-        
+
       case 'PASS_PRIORITY':
         // Pass priority to the next player
         this.gameState = this.priorityManager.passPriority(this.gameState);
         break;
-        
+
       case 'ADVANCE_TURN':
         // Advance to the next turn/phase/step
         this.gameState = this.turnManager.advance(this.gameState);
         // Set priority to the active player at the start of the new step
         this.gameState = this.priorityManager.setActivePlayerPriority(this.gameState);
+        break;
+
+      case 'ACTIVATE_ABILITY':
+        // Activate an ability on a card
+        const abilityResult = activateAbility(
+          this.gameState,
+          playerId,
+          action.cardId,
+          action.abilityId,
+          action.targets
+        );
+        if (abilityResult.success && abilityResult.gameState) {
+          this.gameState = abilityResult.gameState;
+        }
+        // In a full implementation, we might handle errors differently
+        break;
+
+      case 'CAST_SPELL':
+        // Cast a spell (to be implemented when needed)
+        // For now, this is a placeholder for future spell casting implementation
         break;
     }
 

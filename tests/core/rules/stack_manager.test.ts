@@ -14,7 +14,7 @@ describe('StackManager', () => {
 
   beforeEach(() => {
     stackManager = new StackManager();
-    
+
     // Create mock players
     mockPlayer1 = {
       id: 'player1',
@@ -28,7 +28,7 @@ describe('StackManager', () => {
       landsPlayedThisTurn: 0,
       hasLost: false
     };
-    
+
     mockPlayer2 = {
       id: 'player2',
       life: 20,
@@ -41,7 +41,7 @@ describe('StackManager', () => {
       landsPlayedThisTurn: 0,
       hasLost: false
     };
-    
+
     // Create mock zones
     mockStackZone = {
       id: 'stack',
@@ -49,21 +49,21 @@ describe('StackManager', () => {
       cards: ['card1'],
       ownerPlayerId: 'game'
     };
-    
+
     mockBattlefieldZone1 = {
       id: 'battlefield1',
       name: 'Battlefield',
       cards: [],
       ownerPlayerId: 'player1'
     };
-    
+
     mockBattlefieldZone2 = {
       id: 'battlefield2',
       name: 'Battlefield',
       cards: [],
       ownerPlayerId: 'player2'
     };
-    
+
     // Create mock card definition
     const mockCardDefinition = {
       id: 'creature1',
@@ -96,7 +96,7 @@ describe('StackManager', () => {
       stackZoneId: 'stack',
       abilityRegistry: {} as any
     };
-    
+
     // Create mock card instance
     mockCardInstance = new CardInstance(
       'card1',
@@ -106,7 +106,7 @@ describe('StackManager', () => {
       'stack',
       mockGameState
     );
-    
+
     // Update game state with card instance
     mockGameState.cardInstances.set('card1', mockCardInstance);
   });
@@ -114,28 +114,28 @@ describe('StackManager', () => {
   describe('resolveTop', () => {
     it('should resolve the top creature spell on the stack', () => {
       const updatedState = stackManager.resolveTop(mockGameState);
-      
+
       // Check that the card is no longer in the stack
       const stackZone = updatedState.zones.get('stack');
       expect(stackZone?.cards).toHaveLength(0);
-      
+
       // Check that the card is now in the controller's battlefield
       const battlefieldZone = updatedState.zones.get('battlefield1');
       expect(battlefieldZone?.cards).toContain('card1');
-      
+
       // Check that the card instance has been updated
       const cardInstance = updatedState.cardInstances.get('card1');
       expect(cardInstance?.currentZoneId).toBe('battlefield1');
       expect(cardInstance?.turnEnteredBattlefield).toBe(1);
       expect(cardInstance?.hasSummoningSickness).toBe(true);
     });
-    
+
     it('should return the same state if the stack is empty', () => {
       // Empty the stack
       mockStackZone.cards = [];
-      
+
       const updatedState = stackManager.resolveTop(mockGameState);
-      
+
       // Should be the same state
       expect(updatedState).toEqual(mockGameState);
     });

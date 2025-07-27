@@ -506,7 +506,7 @@
 
 **Verification:** Targeted effects correctly validate targets; effects are applied to correct targets; tests pass.
 
-### Task ID: ABILITY-03
+### Task ID: ABILITY-03 ✅ COMPLETED
 
 **Phase:** 4 - Advanced Features
 
@@ -529,7 +529,7 @@
 
 ## Phase 5: Complex Cards & Interactions
 
-### Task ID: DATA-03
+### Task ID: DATA-03 ✅ COMPLETED
 
 **Phase:** 5 - Complex Cards & Interactions
 
@@ -548,7 +548,7 @@
 
 **Verification:** JSON is valid and conforms to the schema; ability references are correct.
 
-### Task ID: ACTION-04
+### Task ID: ACTION-04 ✅ COMPLETED
 
 **Phase:** 5 - Complex Cards & Interactions
 
@@ -577,10 +577,10 @@
 
 **Goal:** Lay the foundation for an HTTP server to expose the engine functionality.
 
-**Input/Context:** Existing engine, Express.js (or similar framework), REST API design principles.
+**Input/Context:** Existing engine, Express.js, REST API design principles.
 
 **Instructions:**
-1. Install Express.js (or chosen framework) and related dependencies.
+1. Install Express.js and related dependencies.
 2. Create src/server/index.ts to set up the basic server structure.
 3. Define API routes for core game operations:
    - POST /games - Create a new game
@@ -589,6 +589,7 @@
 4. Implement basic request/response handling.
 5. Add error handling middleware.
 6. Implement unit tests for the server endpoints.
+7. Make sure we have a strongly typed API using TypeScript so that the request and response bodies are validated against the defined interfaces and we have a clear public API contract.
 
 **Deliverables:** Basic HTTP server with API endpoints, tests.
 

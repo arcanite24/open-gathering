@@ -1,0 +1,292 @@
+[
+    {
+        "id": "serra_angel",
+        "name": "Serra Angel",
+        "manaCost": "{3}{W}{W}",
+        "cmc": 5,
+        "types": [
+            "Creature"
+        ],
+        "subtypes": [
+            "Angel"
+        ],
+        "power": "4",
+        "toughness": "4",
+        "oracleText": "Flying, vigilance"
+    },
+    {
+        "id": "graveyard_specter",
+        "name": "Graveyard Specter",
+        "manaCost": "{1}{B}{B}",
+        "cmc": 3,
+        "types": [
+            "Creature"
+        ],
+        "subtypes": [
+            "Specter"
+        ],
+        "power": "1",
+        "toughness": "1",
+        "oracleText": "When Graveyard Specter dies, you gain 1 life.",
+        "abilities": [
+            {
+                "key": "when_this_creature_dies_gain_life",
+                "parameters": {}
+            }
+        ]
+    },
+    {
+        "id": "benalish_marshal",
+        "name": "Benalish Marshal",
+        "manaCost": "{W}{W}{W}",
+        "cmc": 3,
+        "types": [
+            "Creature"
+        ],
+        "subtypes": [
+            "Human",
+            "Knight"
+        ],
+        "power": "3",
+        "toughness": "3",
+        "oracleText": "Other creatures you control get +1/+1.",
+        "abilities": [
+            {
+                "key": "creatures_get_plus_one_plus_one",
+                "parameters": {
+                    "power": 1,
+                    "toughness": 1
+                }
+            }
+        ]
+    },
+    {
+        "id": "llanowar_elves",
+        "name": "Llanowar Elves",
+        "manaCost": "{G}",
+        "cmc": 1,
+        "types": [
+            "Creature"
+        ],
+        "subtypes": [
+            "Elf",
+            "Druid"
+        ],
+        "power": "1",
+        "toughness": "1",
+        "oracleText": "{T}: Add {G}.",
+        "abilities": [
+            {
+                "key": "inherent_ability_tap_add_mana",
+                "parameters": {
+                    "mana": "{G}"
+                }
+            }
+        ]
+    },
+    {
+        "id": "soul_warden",
+        "name": "Soul Warden",
+        "manaCost": "{W}",
+        "cmc": 1,
+        "types": [
+            "Creature"
+        ],
+        "subtypes": [
+            "Human",
+            "Cleric"
+        ],
+        "power": "1",
+        "toughness": "1",
+        "oracleText": "Whenever another creature enters the battlefield, you gain 1 life.",
+        "abilities": [
+            {
+                "key": "when_this_creature_dies_gain_life",
+                "parameters": {}
+            }
+        ]
+    },
+    {
+        "id": "elvish_warrior",
+        "name": "Elvish Warriors",
+        "manaCost": "{G}{G}",
+        "cmc": 2,
+        "types": [
+            "Creature"
+        ],
+        "subtypes": [
+            "Elf",
+            "Warrior"
+        ],
+        "power": "2",
+        "toughness": "3",
+        "oracleText": "A 2/3 creature for {G}{G}."
+    },
+    {
+        "id": "goblin_lord",
+        "name": "Goblin Lord",
+        "manaCost": "{1}{R}{R}",
+        "cmc": 3,
+        "types": [
+            "Creature"
+        ],
+        "subtypes": [
+            "Goblin"
+        ],
+        "power": "2",
+        "toughness": "2",
+        "oracleText": "Other Goblin creatures get +1/+1 and have mountainwalk.",
+        "abilities": [
+            {
+                "key": "creatures_get_plus_one_plus_one",
+                "parameters": {
+                    "power": 1,
+                    "toughness": 1
+                }
+            }
+        ]
+    },
+    {
+        "id": "monastery_swiftspear",
+        "name": "Monastery Swiftspear",
+        "manaCost": "{R}",
+        "cmc": 1,
+        "types": [
+            "Creature"
+        ],
+        "subtypes": [
+            "Human",
+            "Monk"
+        ],
+        "power": "1",
+        "toughness": "2",
+        "oracleText": "Haste, prowess (Whenever you cast a noncreature spell, this creature gets +1/+1 until end of turn.)"
+    },
+    {
+        "id": "fyndhorn_elves",
+        "name": "Fyndhorn Elves",
+        "manaCost": "{G}",
+        "cmc": 1,
+        "types": [
+            "Creature"
+        ],
+        "subtypes": [
+            "Elf",
+            "Druid"
+        ],
+        "power": "1",
+        "toughness": "1",
+        "oracleText": "{T}: Add {G}.",
+        "abilities": [
+            {
+                "key": "inherent_ability_tap_add_mana",
+                "parameters": {
+                    "mana": "{G}"
+                }
+            }
+        ]
+    },
+    {
+        "id": "vampire_nighthawk",
+        "name": "Vampire Nighthawk",
+        "manaCost": "{1}{B}{B}",
+        "cmc": 3,
+        "types": [
+            "Creature"
+        ],
+        "subtypes": [
+            "Vampire",
+            "Shaman"
+        ],
+        "power": "2",
+        "toughness": "3",
+        "oracleText": "Flying, deathtouch, lifelink"
+    },
+    {
+        "id": "wall_of_omens",
+        "name": "Wall of Omens",
+        "manaCost": "{1}{W}",
+        "cmc": 2,
+        "types": [
+            "Creature"
+        ],
+        "subtypes": [
+            "Wall"
+        ],
+        "power": "0",
+        "toughness": "4",
+        "oracleText": "Defender. When Wall of Omens enters the battlefield, draw a card."
+    },
+    {
+        "id": "crusade",
+        "name": "Crusade",
+        "manaCost": "{W}{W}",
+        "cmc": 2,
+        "types": [
+            "Enchantment"
+        ],
+        "oracleText": "White creatures get +1/+1.",
+        "abilities": [
+            {
+                "key": "creatures_get_plus_one_plus_one",
+                "parameters": {
+                    "power": 1,
+                    "toughness": 1
+                }
+            }
+        ]
+    },
+    {
+        "id": "bad_moon",
+        "name": "Bad Moon",
+        "manaCost": "{1}{B}",
+        "cmc": 2,
+        "types": [
+            "Enchantment"
+        ],
+        "oracleText": "Black creatures get +1/+1.",
+        "abilities": [
+            {
+                "key": "creatures_get_plus_one_plus_one",
+                "parameters": {
+                    "power": 1,
+                    "toughness": 1
+                }
+            }
+        ]
+    },
+    {
+        "id": "lightning_bolt",
+        "name": "Lightning Bolt",
+        "manaCost": "{R}",
+        "cmc": 1,
+        "types": [
+            "Instant"
+        ],
+        "oracleText": "Lightning Bolt deals 3 damage to any target.",
+        "effects": [
+            {
+                "key": "deal_damage",
+                "parameters": {
+                    "damage": 3
+                }
+            }
+        ]
+    },
+    {
+        "id": "counterspell",
+        "name": "Counterspell",
+        "manaCost": "{U}{U}",
+        "cmc": 2,
+        "types": [
+            "Instant"
+        ],
+        "oracleText": "Counter target spell.",
+        "effects": [
+            {
+                "key": "counter_target_spell",
+                "parameters": {}
+            }
+        ]
+    }
+]
