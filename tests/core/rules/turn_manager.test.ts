@@ -20,12 +20,14 @@ describe('TurnManager', () => {
       ]),
       zones: new Map(),
       cardInstances: new Map(),
+      cardDefinitions: new Map(),
       activePlayerId: 'player1',
       priorityPlayerId: 'player1',
       turn: 1,
       phase: Phase.Beginning,
       step: Step.Untap,
-      stackZoneId: 'stack'
+      stackZoneId: 'stack',
+      abilityRegistry: {} as any
     };
   });
 

@@ -35,9 +35,15 @@ describe('SBAChecker', () => {
             hasLost: false,
         };
 
+        cardDefinitions = new Map([
+            ['creature-def-1', { id: 'creature-def-1', name: 'Grizzly Bears', types: ['Creature'], manaCost: '{1}{G}', cmc: 2, power: '2', toughness: '2', oracleText: '', subtypes: ['Bear'], supertypes: [] }],
+            ['creature-def-2', { id: 'creature-def-2', name: 'Merfolk of the Pearl Trident', types: ['Creature'], manaCost: '{U}', cmc: 1, power: '1', toughness: '1', oracleText: '', subtypes: ['Merfolk'], supertypes: [] }],
+        ]);
+
         const creature1: ICardInstance = {
             id: 'c1',
             definitionId: 'creature-def-1',
+            definition: cardDefinitions.get('creature-def-1')!,
             ownerPlayerId: 'p1',
             controllerPlayerId: 'p1',
             currentZoneId: 'p1-battlefield',
@@ -53,6 +59,7 @@ describe('SBAChecker', () => {
         const creature2: ICardInstance = {
             id: 'c2',
             definitionId: 'creature-def-2',
+            definition: cardDefinitions.get('creature-def-2')!,
             ownerPlayerId: 'p2',
             controllerPlayerId: 'p2',
             currentZoneId: 'p2-battlefield',
@@ -74,12 +81,14 @@ describe('SBAChecker', () => {
             players: new Map([['p1', player1], ['p2', player2]]),
             zones: new Map([['p1-battlefield', battlefield1], ['p1-graveyard', graveyard1], ['p2-battlefield', battlefield2], ['p2-graveyard', graveyard2]]),
             cardInstances: new Map([['c1', creature1], ['c2', creature2]]),
+            cardDefinitions: cardDefinitions,
             activePlayerId: 'p1',
             priorityPlayerId: 'p1',
             turn: 1,
             phase: 'Main',
             step: 'PreCombatMain',
             stackZoneId: 'stack',
+            abilityRegistry: {} as any
         };
 
         cardDefinitions = new Map([

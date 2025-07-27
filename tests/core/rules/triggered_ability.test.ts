@@ -32,6 +32,11 @@ describe('Triggered Abilities', () => {
     const player1 = gameState.players.get('player1')!;
     const creatureCard = gameState.cardInstances.values().next().value;
 
+    // Ensure creatureCard exists
+    if (!creatureCard) {
+      throw new Error('No creature card found in game state');
+    }
+
     // Move creature to battlefield
     const libraryZone = gameState.zones.get(player1.libraryZoneId)!;
     const battlefieldZone = gameState.zones.get(player1.battlefieldZoneId)!;

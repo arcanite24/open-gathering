@@ -12,6 +12,13 @@ describe('TapAddManaAbility', () => {
   let tapAddManaAbility: TapAddManaAbility;
 
   beforeEach(() => {
+    // Create mock card definition
+    const mockCardDefinition = {
+      id: 'basic_plains',
+      name: 'Plains',
+      types: ['Land', 'Plains']
+    };
+
     // Create mock player
     mockPlayer = {
       id: 'player1',
@@ -22,9 +29,10 @@ describe('TapAddManaAbility', () => {
       graveyardZoneId: 'graveyard1',
       exileZoneId: 'exile1',
       battlefieldZoneId: 'battlefield1',
-      landsPlayedThisTurn: 0
+      landsPlayedThisTurn: 0,
+      hasLost: false
     };
-    
+
     // Create mock zone
     mockBattlefieldZone = {
       id: 'battlefield1',
@@ -32,29 +40,35 @@ describe('TapAddManaAbility', () => {
       cards: ['card1'],
       ownerPlayerId: 'player1'
     };
-    
-    // Create mock card instance
-    mockCardInstance = new CardInstance(
-      'card1',
-      'basic_plains',
-      'player1',
-      'player1',
-      'battlefield1'
-    );
-    
-    // Create mock game state
+
+    // Create mock game state first (needed for CardInstance constructor)
     mockGameState = {
       players: new Map([['player1', mockPlayer]]),
       zones: new Map([['battlefield1', mockBattlefieldZone]]),
-      cardInstances: new Map([['card1', mockCardInstance]]),
+      cardInstances: new Map(),
+      cardDefinitions: new Map([['basic_plains', mockCardDefinition]]),
       activePlayerId: 'player1',
       priorityPlayerId: 'player1',
       turn: 1,
       phase: 'Main1',
       step: 'Main',
-      stackZoneId: 'stack'
+      stackZoneId: 'stack',
+      abilityRegistry: {} as any
     };
-    
+
+    // Create mock card instance
+    mockCardInstance = new CardInstance(
+      'card1',
+      mockCardDefinition,
+      'player1',
+      'player1',
+      'battlefield1',
+      mockGameState
+    );
+
+    // Update game state with card instance
+    mockGameState.cardInstances.set('card1', mockCardInstance);
+
     // Create the ability
     tapAddManaAbility = new TapAddManaAbility('ability1', 'card1', 'W');
   });
@@ -64,62 +78,64 @@ describe('TapAddManaAbility', () => {
       const result = tapAddManaAbility.canActivate(mockGameState, 'player1');
       expect(result).toBe(true);
     });
-    
+
     it('should return false when the card is already tapped', () => {
       // Update the card instance to be tapped
       const tappedCardInstance = new CardInstance(
         'card1',
-        'basic_plains',
+        mockGameState.cardDefinitions.get('basic_plains')!,
         'player1',
         'player1',
-        'battlefield1'
+        'battlefield1',
+        mockGameState
       );
       tappedCardInstance.isTapped = true;
-      
+
       const gameStateWithTappedCard: IGameState = {
         ...mockGameState,
         cardInstances: new Map([['card1', tappedCardInstance]])
       };
-      
+
       const result = tapAddManaAbility.canActivate(gameStateWithTappedCard, 'player1');
       expect(result).toBe(false);
     });
-    
+
     it('should return false when the player does not control the card', () => {
       const result = tapAddManaAbility.canActivate(mockGameState, 'player2');
       expect(result).toBe(false);
     });
   });
-  
+
   describe('activate', () => {
     it('should tap the card and add mana to the player pool', () => {
       const updatedState = tapAddManaAbility.activate(mockGameState, 'player1');
-      
+
       // Check that the card is now tapped
       const cardInstance = updatedState.cardInstances.get('card1');
       expect(cardInstance?.isTapped).toBe(true);
-      
+
       // Check that mana was added to the player's pool
       const player = updatedState.players.get('player1');
       expect(player?.manaPool.W).toBe(1);
     });
-    
+
     it('should return the same state if the ability cannot be activated', () => {
       // Make the card already tapped
       const tappedCardInstance = new CardInstance(
         'card1',
-        'basic_plains',
+        mockGameState.cardDefinitions.get('basic_plains')!,
         'player1',
         'player1',
-        'battlefield1'
+        'battlefield1',
+        mockGameState
       );
       tappedCardInstance.isTapped = true;
-      
+
       const gameStateWithTappedCard: IGameState = {
         ...mockGameState,
         cardInstances: new Map([['card1', tappedCardInstance]])
       };
-      
+
       const updatedState = tapAddManaAbility.activate(gameStateWithTappedCard, 'player1');
       expect(updatedState).toEqual(gameStateWithTappedCard);
     });
@@ -133,28 +149,41 @@ describe('TapCost', () => {
 
   beforeEach(() => {
     tapCost = new TapCost();
-    
-    // Create mock card instance
-    mockCardInstance = new CardInstance(
-      'card1',
-      'basic_plains',
-      'player1',
-      'player1',
-      'battlefield1'
-    );
-    
-    // Create mock game state
+
+    // Create mock card definition
+    const mockCardDefinition = {
+      id: 'basic_plains',
+      name: 'Plains',
+      types: ['Land', 'Plains']
+    };
+
+    // Create mock game state first
     mockGameState = {
       players: new Map(),
       zones: new Map(),
-      cardInstances: new Map([['card1', mockCardInstance]]),
+      cardInstances: new Map(),
+      cardDefinitions: new Map([['basic_plains', mockCardDefinition]]),
       activePlayerId: 'player1',
       priorityPlayerId: 'player1',
       turn: 1,
       phase: 'Main1',
       step: 'Main',
-      stackZoneId: 'stack'
+      stackZoneId: 'stack',
+      abilityRegistry: {} as any
     };
+
+    // Create mock card instance
+    mockCardInstance = new CardInstance(
+      'card1',
+      mockCardDefinition,
+      'player1',
+      'player1',
+      'battlefield1',
+      mockGameState
+    );
+
+    // Update game state with card instance
+    mockGameState.cardInstances.set('card1', mockCardInstance);
   });
 
   describe('canPay', () => {
@@ -162,41 +191,42 @@ describe('TapCost', () => {
       const result = tapCost.canPay(mockGameState, 'card1');
       expect(result).toBe(true);
     });
-    
+
     it('should return false when the card is already tapped', () => {
       // Update the card instance to be tapped
       const tappedCardInstance = new CardInstance(
         'card1',
-        'basic_plains',
+        mockGameState.cardDefinitions.get('basic_plains')!,
         'player1',
         'player1',
-        'battlefield1'
+        'battlefield1',
+        mockGameState
       );
       tappedCardInstance.isTapped = true;
-      
+
       const gameStateWithTappedCard: IGameState = {
         ...mockGameState,
         cardInstances: new Map([['card1', tappedCardInstance]])
       };
-      
+
       const result = tapCost.canPay(gameStateWithTappedCard, 'card1');
       expect(result).toBe(false);
     });
-    
+
     it('should return false when the card instance does not exist', () => {
       const result = tapCost.canPay(mockGameState, 'nonexistent');
       expect(result).toBe(false);
     });
   });
-  
+
   describe('pay', () => {
     it('should tap the card', () => {
       const updatedState = tapCost.pay(mockGameState, 'card1');
-      
+
       const cardInstance = updatedState.cardInstances.get('card1');
       expect(cardInstance?.isTapped).toBe(true);
     });
-    
+
     it('should return the same state when the card instance does not exist', () => {
       const updatedState = tapCost.pay(mockGameState, 'nonexistent');
       expect(updatedState).toEqual(mockGameState);
@@ -212,7 +242,14 @@ describe('AddManaEffect', () => {
 
   beforeEach(() => {
     addManaEffect = new AddManaEffect('W');
-    
+
+    // Create mock card definition
+    const mockCardDefinition = {
+      id: 'basic_plains',
+      name: 'Plains',
+      types: ['Land', 'Plains']
+    };
+
     // Create mock player
     mockPlayer = {
       id: 'player1',
@@ -223,61 +260,81 @@ describe('AddManaEffect', () => {
       graveyardZoneId: 'graveyard1',
       exileZoneId: 'exile1',
       battlefieldZoneId: 'battlefield1',
-      landsPlayedThisTurn: 0
+      landsPlayedThisTurn: 0,
+      hasLost: false
     };
-    
-    // Create mock card instance
-    mockCardInstance = new CardInstance(
-      'card1',
-      'basic_plains',
-      'player1',
-      'player1',
-      'battlefield1'
-    );
-    
-    // Create mock game state
+
+    // Create mock game state first
     mockGameState = {
       players: new Map([['player1', mockPlayer]]),
       zones: new Map(),
-      cardInstances: new Map([['card1', mockCardInstance]]),
+      cardInstances: new Map(),
+      cardDefinitions: new Map([['basic_plains', mockCardDefinition]]),
       activePlayerId: 'player1',
       priorityPlayerId: 'player1',
       turn: 1,
       phase: 'Main1',
       step: 'Main',
-      stackZoneId: 'stack'
+      stackZoneId: 'stack',
+      abilityRegistry: {} as any
     };
+
+    // Create mock card instance
+    mockCardInstance = new CardInstance(
+      'card1',
+      mockCardDefinition,
+      'player1',
+      'player1',
+      'battlefield1',
+      mockGameState
+    );
+
+    // Update game state with card instance
+    mockGameState.cardInstances.set('card1', mockCardInstance);
   });
 
   describe('resolve', () => {
     it('should add white mana to the controller pool', () => {
-      const updatedState = addManaEffect.resolve(mockGameState, { sourceCardInstanceId: 'card1' });
-      
+      const context = {
+        sourceCardInstanceId: 'card1',
+        cardDefinitions: mockGameState.cardDefinitions
+      };
+      const updatedState = addManaEffect.resolve(mockGameState, context);
+
       const player = updatedState.players.get('player1');
       expect(player?.manaPool.W).toBe(1);
     });
-    
+
     it('should return the same state when the source card instance does not exist', () => {
-      const updatedState = addManaEffect.resolve(mockGameState, { sourceCardInstanceId: 'nonexistent' });
+      const context = {
+        sourceCardInstanceId: 'nonexistent',
+        cardDefinitions: mockGameState.cardDefinitions
+      };
+      const updatedState = addManaEffect.resolve(mockGameState, context);
       expect(updatedState).toEqual(mockGameState);
     });
-    
+
     it('should return the same state when the controller does not exist', () => {
       // Create a card with a nonexistent controller
       const cardWithoutController = new CardInstance(
         'card2',
-        'basic_plains',
+        mockGameState.cardDefinitions.get('basic_plains')!,
         'player1',
         'nonexistent',
-        'battlefield1'
+        'battlefield1',
+        mockGameState
       );
-      
+
       const gameStateWithoutController: IGameState = {
         ...mockGameState,
         cardInstances: new Map([['card2', cardWithoutController]])
       };
-      
-      const updatedState = addManaEffect.resolve(gameStateWithoutController, { sourceCardInstanceId: 'card2' });
+
+      const context = {
+        sourceCardInstanceId: 'card2',
+        cardDefinitions: gameStateWithoutController.cardDefinitions
+      };
+      const updatedState = addManaEffect.resolve(gameStateWithoutController, context);
       expect(updatedState).toEqual(gameStateWithoutController);
     });
   });

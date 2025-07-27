@@ -25,7 +25,8 @@ describe('StackManager', () => {
       graveyardZoneId: 'graveyard1',
       exileZoneId: 'exile1',
       battlefieldZoneId: 'battlefield1',
-      landsPlayedThisTurn: 0
+      landsPlayedThisTurn: 0,
+      hasLost: false
     };
     
     mockPlayer2 = {
@@ -37,7 +38,8 @@ describe('StackManager', () => {
       graveyardZoneId: 'graveyard2',
       exileZoneId: 'exile2',
       battlefieldZoneId: 'battlefield2',
-      landsPlayedThisTurn: 0
+      landsPlayedThisTurn: 0,
+      hasLost: false
     };
     
     // Create mock zones
@@ -62,16 +64,18 @@ describe('StackManager', () => {
       ownerPlayerId: 'player2'
     };
     
-    // Create mock card instance
-    mockCardInstance = new CardInstance(
-      'card1',
-      'creature1',
-      'player1',
-      'player1',
-      'stack'
-    );
-    
-    // Create mock game state
+    // Create mock card definition
+    const mockCardDefinition = {
+      id: 'creature1',
+      name: 'Test Creature',
+      types: ['Creature'],
+      manaCost: '{2}{G}',
+      cmc: 3,
+      power: '2',
+      toughness: '2'
+    };
+
+    // Create mock game state first
     mockGameState = {
       players: new Map([
         ['player1', mockPlayer1],
@@ -82,16 +86,29 @@ describe('StackManager', () => {
         ['battlefield1', mockBattlefieldZone1],
         ['battlefield2', mockBattlefieldZone2]
       ]),
-      cardInstances: new Map([
-        ['card1', mockCardInstance]
-      ]),
+      cardInstances: new Map(),
+      cardDefinitions: new Map([['creature1', mockCardDefinition]]),
       activePlayerId: 'player1',
       priorityPlayerId: 'player1',
       turn: 1,
       phase: 'Main1',
       step: 'Main',
-      stackZoneId: 'stack'
+      stackZoneId: 'stack',
+      abilityRegistry: {} as any
     };
+    
+    // Create mock card instance
+    mockCardInstance = new CardInstance(
+      'card1',
+      mockCardDefinition,
+      'player1',
+      'player1',
+      'stack',
+      mockGameState
+    );
+    
+    // Update game state with card instance
+    mockGameState.cardInstances.set('card1', mockCardInstance);
   });
 
   describe('resolveTop', () => {
