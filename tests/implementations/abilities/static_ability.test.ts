@@ -165,6 +165,13 @@ describe('Static Abilities and ContinuousEffectProcessor', () => {
     remove: (gs: IGameState) => gs, // Not used in this test structure
   });
 
+  // Mock concrete implementation for testing
+  class TestStaticAbility extends StaticAbilityBase {
+    constructor(id: string, sourceCardInstanceId: string, effect: IContinuousEffect) {
+      super(id, sourceCardInstanceId, effect);
+    }
+  }
+
   it('should apply effects in correct layer order', () => {
     const sourceDef = mockCardDefinition('source', ['Enchantment']);
     const source = createCreature('source_1', sourceDef, player1, player1);
@@ -174,8 +181,8 @@ describe('Static Abilities and ContinuousEffectProcessor', () => {
 
     const filter = (card: ICardInstance) => card.id === target.id;
 
-    const ability1 = new StaticAbilityBase('type_change', source.id, createTypeChangeEffect(filter));
-    const ability2 = new StaticAbilityBase('pt_change', source.id, createPtChangeEffect(filter));
+    const ability1 = new TestStaticAbility('type_change', source.id, createTypeChangeEffect(filter));
+    const ability2 = new TestStaticAbility('pt_change', source.id, createPtChangeEffect(filter));
 
     source.staticAbilities.push(ability1, ability2);
 

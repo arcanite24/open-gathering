@@ -1,23 +1,24 @@
-import { 
-  IPlayer, 
-  IZone, 
-  ICardDefinition, 
-  ICardInstance, 
+import {
+  IPlayer,
+  IZone,
+  ICardDefinition,
+  ICardInstance,
   IGameState,
   ManaPool
 } from '../../../src/core/game_state/interfaces';
-import { 
-  IAbility, 
-  ICost, 
-  IEffect, 
-  IActivatedAbility, 
-  ITriggeredAbility, 
+import {
+  IAbility,
+  ICost,
+  IEffect,
+  IActivatedAbility,
+  ITriggeredAbility,
   IStaticAbility,
   EffectContext,
   Target,
   TriggerCondition,
   GameEvent
 } from '../../../src/core/abilities/interfaces';
+import { initializeAbilityRegistry } from '../../../src/core/abilities/registry';
 
 describe('Game State Interfaces', () => {
   // Test that the interfaces are properly defined by creating mock objects that implement them
@@ -25,18 +26,19 @@ describe('Game State Interfaces', () => {
     const mockPlayer: IPlayer = {
       id: 'player1',
       life: 20,
-      manaPool: { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 },
+      manaPool: { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0, generic: 0 },
       handZoneId: 'hand1',
       libraryZoneId: 'library1',
       graveyardZoneId: 'graveyard1',
       exileZoneId: 'exile1',
       battlefieldZoneId: 'battlefield1',
-      landsPlayedThisTurn: 0
+      landsPlayedThisTurn: 0,
+      hasLost: false
     };
 
     expect(mockPlayer.id).toBe('player1');
     expect(mockPlayer.life).toBe(20);
-    expect(mockPlayer.manaPool).toEqual({ W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 });
+    expect(mockPlayer.manaPool).toEqual({ W: 0, U: 0, B: 0, R: 0, G: 0, C: 0, generic: 0 });
   });
 
   it('should define IZone interface correctly', () => {
@@ -74,8 +76,22 @@ describe('Game State Interfaces', () => {
   });
 
   it('should define ICardInstance interface correctly', () => {
+    const mockCardDefinition: ICardDefinition = {
+      id: 'card1',
+      name: 'Test Card',
+      cmc: 1,
+      types: ['Creature'],
+      subtypes: ['Test'],
+      supertypes: [],
+      manaCost: '{R}',
+      oracleText: 'A test card.',
+      power: '1',
+      toughness: '1'
+    };
+
     const mockCardInstance: ICardInstance = {
       id: 'instance1',
+      definition: mockCardDefinition,
       definitionId: 'card1',
       ownerPlayerId: 'player1',
       controllerPlayerId: 'player1',
@@ -97,13 +113,14 @@ describe('Game State Interfaces', () => {
     const mockPlayer: IPlayer = {
       id: 'player1',
       life: 20,
-      manaPool: { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 },
+      manaPool: { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0, generic: 0 },
       handZoneId: 'hand1',
       libraryZoneId: 'library1',
       graveyardZoneId: 'graveyard1',
       exileZoneId: 'exile1',
       battlefieldZoneId: 'battlefield1',
-      landsPlayedThisTurn: 0
+      landsPlayedThisTurn: 0,
+      hasLost: false
     };
 
     const mockZone: IZone = {
@@ -113,8 +130,22 @@ describe('Game State Interfaces', () => {
       ownerPlayerId: 'player1'
     };
 
+    const mockCardDefinition2: ICardDefinition = {
+      id: 'card1',
+      name: 'Test Card 2',
+      cmc: 2,
+      types: ['Sorcery'],
+      subtypes: [],
+      supertypes: [],
+      manaCost: '{1}{U}',
+      oracleText: 'Another test card.',
+      power: '',
+      toughness: ''
+    };
+
     const mockCardInstance: ICardInstance = {
       id: 'instance1',
+      definition: mockCardDefinition2,
       definitionId: 'card1',
       ownerPlayerId: 'player1',
       controllerPlayerId: 'player1',
@@ -136,7 +167,11 @@ describe('Game State Interfaces', () => {
       turn: 1,
       phase: 'Main',
       step: 'Begin',
-      stackZoneId: 'stack'
+      stackZoneId: 'stack',
+      cardDefinitions: new Map([
+        [mockCardDefinition2.id, mockCardDefinition2]
+      ]),
+      abilityRegistry: initializeAbilityRegistry()
     };
 
     expect(mockGameState.players.get('player1')).toBeDefined();
@@ -158,8 +193,15 @@ describe('Ability Interfaces', () => {
   });
 
   it('should define ICost interface correctly', () => {
-    // ICost is a marker interface, so we just verify it exists
-    const mockCost: ICost = {};
+    // ICost requires canPay and pay methods
+    const mockCost: ICost = {
+      canPay: (gameState: IGameState, playerId: string): boolean => {
+        return true;
+      },
+      pay: (gameState: IGameState, playerId: string): IGameState => {
+        return gameState;
+      }
+    };
     expect(mockCost).toBeDefined();
   });
 
@@ -187,8 +229,8 @@ describe('Ability Interfaces', () => {
       canActivate: (gameState: IGameState, playerId: string): boolean => {
         return true;
       },
-      activate: (gameState: IGameState, playerId: string, targets?: Target[]): void => {
-        // Implementation would go here
+      activate: (gameState: IGameState, playerId: string, targets?: Target[]): IGameState => {
+        return gameState;
       }
     };
 
@@ -210,8 +252,8 @@ describe('Ability Interfaces', () => {
       checkTrigger: (event: GameEvent, gameState: IGameState): boolean => {
         return true;
       },
-      resolve: (gameState: IGameState): void => {
-        // Implementation would go here
+      resolve: (gameState: IGameState): IGameState => {
+        return gameState;
       }
     };
 

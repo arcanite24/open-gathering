@@ -4,6 +4,7 @@ import { Player } from '../../../src/core/game_state/player';
 import { Zone } from '../../../src/core/game_state/zone';
 import { CardInstance } from '../../../src/core/game_state/card_instance';
 import { Phase, Step } from '../../../src/core/rules/turn_manager';
+import { initializeAbilityRegistry } from '../../../src/core/abilities/registry';
 
 describe('Play Land Action', () => {
   let gameState: IGameState;
@@ -22,10 +23,7 @@ describe('Play Land Action', () => {
     handZone = new Zone(player1.handZoneId, 'Hand', player1.id);
     battlefieldZone = new Zone(player1.battlefieldZoneId, 'Battlefield', player1.id);
 
-    // Set up a land card
-    landCard = new CardInstance('land1', 'basic_plains', player1.id, player1.id, handZone.id);
-
-    // Set up game state
+    // Set up game state first
     gameState = {
       players: new Map([
         [player1.id, player1],
@@ -35,16 +33,35 @@ describe('Play Land Action', () => {
         [handZone.id, handZone],
         [battlefieldZone.id, battlefieldZone]
       ]),
-      cardInstances: new Map([
-        [landCard.id, landCard]
-      ]),
+      cardInstances: new Map(),
       activePlayerId: player1.id,
       priorityPlayerId: player1.id,
       turn: 1,
       phase: Phase.PreCombatMain,
       step: '',
-      stackZoneId: 'stack'
+      stackZoneId: 'stack',
+      cardDefinitions: new Map(),
+      abilityRegistry: initializeAbilityRegistry()
     };
+
+    // Set up a land card definition
+    const landDefinition = {
+      id: 'basic_plains',
+      name: 'Plains',
+      cmc: 0,
+      types: ['Land'],
+      subtypes: ['Plains'],
+      supertypes: ['Basic'],
+      manaCost: '',
+      oracleText: 'Tap: Add W.',
+      power: '',
+      toughness: ''
+    };
+    gameState.cardDefinitions.set(landDefinition.id, landDefinition);
+
+    // Set up a land card instance
+    landCard = new CardInstance('land1', landDefinition, player1.id, player1.id, handZone.id, gameState);
+    gameState.cardInstances.set(landCard.id, landCard);
 
     // Add the land card to the hand zone
     handZone.cards.push(landCard.id);
@@ -117,9 +134,9 @@ describe('Play Land Action', () => {
     it('should not modify state when playing an invalid land', () => {
       // Make it so the player has already played a land
       player1.landsPlayedThisTurn = 1;
-      
+
       const newState = executePlayLand(gameState, player1.id, landCard.id);
-      
+
       // State should be unchanged
       expect(newState).toEqual(gameState);
     });

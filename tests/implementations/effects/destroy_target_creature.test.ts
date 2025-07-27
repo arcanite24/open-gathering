@@ -55,6 +55,7 @@ describe('DestroyTargetCreatureEffect', () => {
     const effect = new DestroyTargetCreatureEffect();
     const context: EffectContext = {
       sourceCardInstanceId: 'source_card',
+      cardDefinitions: gameState.cardDefinitions,
       targets: [{ cardInstanceId: creature.id }],
     };
 
@@ -73,6 +74,7 @@ describe('DestroyTargetCreatureEffect', () => {
     const effect = new DestroyTargetCreatureEffect();
     const context: EffectContext = {
       sourceCardInstanceId: 'source_card',
+      cardDefinitions: gameState.cardDefinitions,
       targets: [{ cardInstanceId: 'invalid_target' }],
     };
 

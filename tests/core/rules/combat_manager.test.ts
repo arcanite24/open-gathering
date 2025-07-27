@@ -1,5 +1,6 @@
 import { CombatManager } from '../../../src/core/rules/combat_manager';
 import { IGameState, IPlayer, ICardInstance, IZone, ICardDefinition } from '../../../src/core/game_state/interfaces';
+import { initializeAbilityRegistry } from '../../../src/core/abilities/registry';
 
 describe('CombatManager', () => {
     let combatManager: CombatManager;
@@ -35,8 +36,35 @@ describe('CombatManager', () => {
             hasLost: false,
         };
 
+        const attackerDefinition: ICardDefinition = {
+            id: 'creature-def-1',
+            name: 'Attacker Creature',
+            cmc: 2,
+            types: ['Creature'],
+            subtypes: ['Test'],
+            supertypes: [],
+            manaCost: '{1}{W}',
+            oracleText: 'A test attacking creature.',
+            power: '2',
+            toughness: '2'
+        };
+
+        const blockerDefinition: ICardDefinition = {
+            id: 'creature-def-2',
+            name: 'Blocker Creature',
+            cmc: 3,
+            types: ['Creature'],
+            subtypes: ['Test'],
+            supertypes: [],
+            manaCost: '{2}{G}',
+            oracleText: 'A test blocking creature.',
+            power: '2',
+            toughness: '3'
+        };
+
         const attacker: ICardInstance = {
             id: 'c1',
+            definition: attackerDefinition,
             definitionId: 'creature-def-1',
             ownerPlayerId: 'p1',
             controllerPlayerId: 'p1',
@@ -55,6 +83,7 @@ describe('CombatManager', () => {
 
         const blocker: ICardInstance = {
             id: 'c2',
+            definition: blockerDefinition,
             definitionId: 'creature-def-2',
             ownerPlayerId: 'p2',
             controllerPlayerId: 'p2',
@@ -81,6 +110,11 @@ describe('CombatManager', () => {
             phase: 'Combat',
             step: 'CombatDamage',
             stackZoneId: 'stack',
+            cardDefinitions: new Map([
+                [attackerDefinition.id, attackerDefinition],
+                [blockerDefinition.id, blockerDefinition]
+            ]),
+            abilityRegistry: initializeAbilityRegistry()
         };
 
         cardDefinitions = new Map([

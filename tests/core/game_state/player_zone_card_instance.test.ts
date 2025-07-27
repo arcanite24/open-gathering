@@ -7,7 +7,7 @@ import { AbilityRegistry } from '../../../src/core/abilities/registry';
 describe('Player', () => {
   it('should create a player with default values', () => {
     const player = new Player('player1');
-    
+
     expect(player.id).toBe('player1');
     expect(player.life).toBe(20);
     expect(player.manaPool).toEqual({ W: 0, U: 0, B: 0, R: 0, G: 0, C: 0, generic: 0 });
@@ -21,7 +21,7 @@ describe('Player', () => {
 
   it('should create a player with custom life total', () => {
     const player = new Player('player1', 30);
-    
+
     expect(player.life).toBe(30);
   });
 });
@@ -42,30 +42,30 @@ describe('Zone', () => {
 
   it('should add a card to the zone', () => {
     zone.addCard('card1');
-    
+
     expect(zone.cards).toEqual(['card1']);
   });
 
   it('should not add duplicate cards to the zone', () => {
     zone.addCard('card1');
     zone.addCard('card1');
-    
+
     expect(zone.cards).toEqual(['card1']);
   });
 
   it('should remove a card from the zone', () => {
     zone.addCard('card1');
     zone.addCard('card2');
-    
+
     const result = zone.removeCard('card1');
-    
+
     expect(result).toBe(true);
     expect(zone.cards).toEqual(['card2']);
   });
 
   it('should return false when trying to remove a non-existent card', () => {
     const result = zone.removeCard('card1');
-    
+
     expect(result).toBe(false);
     expect(zone.cards).toEqual([]);
   });
@@ -89,9 +89,9 @@ describe('CardInstance', () => {
       phase: 'Main',
       step: 'PreCombatMain',
       stackZoneId: 'stack',
+      abilityRegistry: new AbilityRegistry()
     };
-    const mockAbilityRegistry = new AbilityRegistry();
-    mockAbilityRegistry.createAbilityInstance = jest.fn();
+    mockGameState.abilityRegistry.createAbilityInstance = jest.fn();
 
     const cardInstance = new CardInstance(
       'instance1',
@@ -99,10 +99,9 @@ describe('CardInstance', () => {
       'player1',
       'player1',
       'hand_player1',
-      mockAbilityRegistry,
       mockGameState
     );
-    
+
     expect(cardInstance.id).toBe('instance1');
     expect(cardInstance.definitionId).toBe('card1');
     expect(cardInstance.ownerPlayerId).toBe('player1');

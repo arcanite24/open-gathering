@@ -4,6 +4,7 @@ import { Player } from '../../../src/core/game_state/player';
 import { Zone } from '../../../src/core/game_state/zone';
 import { CardInstance } from '../../../src/core/game_state/card_instance';
 import { Phase } from '../../../src/core/rules/turn_manager';
+import { AbilityRegistry, initializeAbilityRegistry } from '../../../src/core/abilities/registry';
 
 describe('Cast Spell Action - Mana Cost Functions', () => {
   describe('calculateCost', () => {
@@ -74,7 +75,7 @@ describe('Cast Spell Action - Mana Cost Functions', () => {
         C: 0,
         generic: 1
       };
-      
+
       expect(canPayCost(player, cost)).toBe(true);
     });
 
@@ -89,7 +90,7 @@ describe('Cast Spell Action - Mana Cost Functions', () => {
         C: 0,
         generic: 3
       };
-      
+
       expect(canPayCost(player, cost)).toBe(false);
     });
   });
@@ -121,9 +122,9 @@ describe('Cast Spell Action - Mana Cost Functions', () => {
         C: 0,
         generic: 1
       };
-      
+
       const updatedPlayer = payCost(player, cost);
-      
+
       expect(updatedPlayer.manaPool.W).toBe(1);  // 2 - 1
       expect(updatedPlayer.manaPool.U).toBe(0);  // 1 - 1
       expect(updatedPlayer.manaPool.generic).toBe(1);  // 2 - 1
@@ -153,10 +154,7 @@ describe('Cast Spell Action - Game State Functions', () => {
     handZone = new Zone(player1.handZoneId, 'Hand', player1.id);
     stackZone = new Zone('stack', 'Stack', 'game');
 
-    // Set up a creature card
-    creatureCard = new CardInstance('creature1', 'grizzly_bears', player1.id, player1.id, handZone.id);
-
-    // Set up game state
+    // Set up game state first
     gameState = {
       players: new Map([
         [player1.id, player1],
@@ -166,16 +164,34 @@ describe('Cast Spell Action - Game State Functions', () => {
         [handZone.id, handZone],
         [stackZone.id, stackZone]
       ]),
-      cardInstances: new Map([
-        [creatureCard.id, creatureCard]
-      ]),
+      cardInstances: new Map(),
       activePlayerId: player1.id,
       priorityPlayerId: player1.id,
       turn: 1,
       phase: Phase.PreCombatMain,
       step: '',
-      stackZoneId: stackZone.id
+      stackZoneId: stackZone.id,
+      cardDefinitions: new Map(),
+      abilityRegistry: initializeAbilityRegistry()
     };
+
+    // Set up a creature card
+    const creatureDefinition = {
+      id: 'grizzly_bears',
+      name: 'Grizzly Bears',
+      cmc: 2,
+      types: ['Creature'],
+      subtypes: ['Bear'],
+      supertypes: [],
+      manaCost: '{1}{G}',
+      oracleText: 'A 2/2 bear creature.',
+      power: '2',
+      toughness: '2'
+    };
+    gameState.cardDefinitions.set(creatureDefinition.id, creatureDefinition);
+
+    creatureCard = new CardInstance('creature1', creatureDefinition, player1.id, player1.id, handZone.id, gameState);
+    gameState.cardInstances.set(creatureCard.id, creatureCard);
 
     // Add the creature card to the hand zone
     handZone.cards.push(creatureCard.id);
@@ -238,9 +254,9 @@ describe('Cast Spell Action - Game State Functions', () => {
     it('should not modify state when casting an invalid spell', () => {
       // Make it so the player doesn't have priority
       gameState.priorityPlayerId = player2.id;
-      
+
       const newState = executeCastSpell(gameState, player1.id, creatureCard.id);
-      
+
       // State should be unchanged
       expect(newState).toEqual(gameState);
     });

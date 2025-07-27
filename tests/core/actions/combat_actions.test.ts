@@ -1,5 +1,6 @@
 import { declareAttackers, declareBlockers } from '../../../src/core/actions/combat_actions';
-import { IGameState, IPlayer, ICardInstance, IZone } from '../../../src/core/game_state/interfaces';
+import { IGameState, IPlayer, IZone, ICardInstance } from '../../../src/core/game_state/interfaces';
+import { initializeAbilityRegistry } from '../../../src/core/abilities/registry';
 
 describe('Combat Actions', () => {
     let gameState: IGameState;
@@ -31,8 +32,35 @@ describe('Combat Actions', () => {
             hasLost: false,
         };
 
+        const creatureDef1 = {
+            id: 'creature-def-1',
+            name: 'Test Creature 1',
+            cmc: 2,
+            types: ['Creature'],
+            subtypes: ['Test'],
+            supertypes: [],
+            manaCost: '{1}{W}',
+            oracleText: 'A test creature.',
+            power: '2',
+            toughness: '2'
+        };
+
+        const creatureDef2 = {
+            id: 'creature-def-2',
+            name: 'Test Creature 2',
+            cmc: 3,
+            types: ['Creature'],
+            subtypes: ['Test'],
+            supertypes: [],
+            manaCost: '{2}{B}',
+            oracleText: 'Another test creature.',
+            power: '2',
+            toughness: '3'
+        };
+
         const creature1: ICardInstance = {
             id: 'c1',
+            definition: creatureDef1,
             definitionId: 'creature-def-1',
             ownerPlayerId: 'p1',
             controllerPlayerId: 'p1',
@@ -51,6 +79,7 @@ describe('Combat Actions', () => {
 
         const creature2: ICardInstance = {
             id: 'c2',
+            definition: creatureDef2,
             definitionId: 'creature-def-2',
             ownerPlayerId: 'p2',
             controllerPlayerId: 'p2',
@@ -80,6 +109,11 @@ describe('Combat Actions', () => {
             phase: 'Combat',
             step: 'DeclareAttackers',
             stackZoneId: 'stack',
+            cardDefinitions: new Map([
+                [creatureDef1.id, creatureDef1],
+                [creatureDef2.id, creatureDef2]
+            ]),
+            abilityRegistry: initializeAbilityRegistry()
         };
     });
 
