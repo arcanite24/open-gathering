@@ -693,3 +693,29 @@
 **Dependencies:** ENGINE-01 and all previous engine tasks.
 
 **Verification:** CLI commands work correctly; game state is displayed properly; actions can be submitted; save/load works; tests pass.
+
+### Task ID: TOOL-02 ✅ COMPLETED
+
+**Phase:** 8 - Visual Testing Tooling
+
+**Goal:** Add automation commands to the CLI for easier testing and development.
+
+**Input/Context:** Existing CLI tool (TOOL-01), need for faster game state progression during testing.
+
+**Instructions:**
+1. Implement `next-turn` command that automatically advances through all steps until the next turn.
+2. Add `to-main` command that tries to advance to a main phase (pre-combat or post-combat).
+3. Add `to-combat` command that tries to advance to the combat phase.
+4. Add `to-end` command that tries to advance to the end step.
+5. Add `to-cleanup` command that tries to advance to the cleanup step.
+6. Ensure all automation commands follow legal MTG rules and stop if player actions are required.
+7. Add proper error handling and user feedback for automation commands.
+8. Update CLI help text to include the new automation commands.
+9. Add comprehensive tests for all automation commands.
+10. Update README.md documentation to include the new automation commands.
+
+**Deliverables:** Enhanced CLI with automation commands, tests, updated documentation.
+
+**Dependencies:** TOOL-01.
+
+**Verification:** Automation commands work correctly; they properly handle priority passing; they stop when player actions are required; tests pass; documentation is updated.

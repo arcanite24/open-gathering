@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Engine, Action } from '../core/engine';
 import { IGameState, ICardDefinition, IPlayer, IZone, ICardInstance } from '../core/game_state/interfaces';
+import { Phase, Step } from '../core/rules/turn_manager';
 import { GameStateDisplay } from './game_state_display';
 import { CommandHandler } from './command_handler';
 import { allScenarios, getScenario, Scenario } from './scenarios/scenarios';
@@ -279,6 +280,18 @@ export class CLI {
                 await this.handleGameAction(command, args);
                 break;
 
+            case 'next-turn':
+            case 'to-main':
+            case 'to-combat':
+            case 'to-end':
+            case 'to-cleanup':
+                if (!this.gameStarted) {
+                    console.log('No game started. Use "new-game" to start a new game.');
+                    break;
+                }
+                await this.handleAutomationCommand(command, args);
+                break;
+
             case 'clear':
                 console.clear();
                 break;
@@ -310,6 +323,163 @@ export class CLI {
     }
 
     /**
+     * Handle automation commands that advance the game state
+     */
+    private async handleAutomationCommand(command: string, args: string[]): Promise<void> {
+        try {
+            const initialState = this.engine.getState();
+            const initialTurn = initialState.turn;
+            const initialPhase = initialState.phase;
+            const initialStep = initialState.step;
+
+            let actionCount = 0;
+            const maxActions = 100; // Safety limit to prevent infinite loops
+
+            switch (command) {
+                case 'next-turn':
+                    console.log(`Advancing from turn ${initialTurn} to next turn...`);
+                    while (this.engine.getState().turn === initialTurn && actionCount < maxActions) {
+                        await this.advanceOneStep();
+                        actionCount++;
+                    }
+                    if (actionCount >= maxActions) {
+                        console.log('Warning: Hit maximum action limit, stopping automation');
+                    } else {
+                        console.log(`Advanced to turn ${this.engine.getState().turn}`);
+                    }
+                    break;
+
+                case 'to-main':
+                    console.log('Trying to advance to main phase...');
+                    while (!this.isInMainPhase() && actionCount < maxActions) {
+                        if (!await this.advanceOneStep()) break;
+                        actionCount++;
+                    }
+                    if (this.isInMainPhase()) {
+                        const state = this.engine.getState();
+                        console.log(`Advanced to ${state.phase} phase`);
+                    } else {
+                        console.log('Could not advance to main phase (may need player actions)');
+                    }
+                    break;
+
+                case 'to-combat':
+                    console.log('Trying to advance to combat phase...');
+                    while (this.engine.getState().phase !== Phase.Combat && actionCount < maxActions) {
+                        if (!await this.advanceOneStep()) break;
+                        actionCount++;
+                    }
+                    if (this.engine.getState().phase === Phase.Combat) {
+                        const state = this.engine.getState();
+                        console.log(`Advanced to Combat phase (${state.step} step)`);
+                    } else {
+                        console.log('Could not advance to combat phase (may need player actions)');
+                    }
+                    break;
+
+                case 'to-end':
+                    console.log('Trying to advance to end step...');
+                    while (this.engine.getState().step !== Step.EndStep && actionCount < maxActions) {
+                        if (!await this.advanceOneStep()) break;
+                        actionCount++;
+                    }
+                    if (this.engine.getState().step === Step.EndStep) {
+                        console.log('Advanced to End Step');
+                    } else {
+                        console.log('Could not advance to end step (may need player actions)');
+                    }
+                    break;
+
+                case 'to-cleanup':
+                    console.log('Trying to advance to cleanup step...');
+                    while (this.engine.getState().step !== Step.Cleanup && actionCount < maxActions) {
+                        if (!await this.advanceOneStep()) break;
+                        actionCount++;
+                    }
+                    if (this.engine.getState().step === Step.Cleanup) {
+                        console.log('Advanced to Cleanup Step');
+                    } else {
+                        console.log('Could not advance to cleanup step (may need player actions)');
+                    }
+                    break;
+            }
+
+            this.display.showGameState(this.engine.getState());
+        } catch (error) {
+            console.error('Failed to execute automation command:', (error as Error).message);
+        }
+    }
+
+    /**
+     * Advance one step in the game, handling priority passes automatically
+     * @returns true if advancement was successful, false if blocked by player actions
+     */
+    private async advanceOneStep(): Promise<boolean> {
+        const initialState = this.engine.getState();
+
+        try {
+            // Check if this is a step where no players receive priority
+            if (this.isAutomaticStep(initialState)) {
+                // For automatic steps like Untap, just advance directly
+                this.engine.submitAction(initialState.activePlayerId, { type: 'ADVANCE_TURN' });
+                const finalState = this.engine.getState();
+                return (finalState.phase !== initialState.phase ||
+                    finalState.step !== initialState.step ||
+                    finalState.turn !== initialState.turn);
+            }
+
+            // For steps with priority, use a simple approach:
+            // Pass priority for both players, then try to advance
+            const playerIds = Array.from(initialState.players.keys());
+
+            // Pass priority for each player once
+            for (const playerId of playerIds) {
+                const currentState = this.engine.getState();
+                if (currentState.priorityPlayerId === playerId) {
+                    this.engine.submitAction(playerId, { type: 'PASS_PRIORITY' });
+                }
+
+                // Check if the game state changed after the pass
+                const afterPassState = this.engine.getState();
+                if (afterPassState.phase !== initialState.phase ||
+                    afterPassState.step !== initialState.step ||
+                    afterPassState.turn !== initialState.turn) {
+                    return true;
+                }
+            }
+
+            // If we've passed through all players and nothing changed, try to advance
+            const currentState = this.engine.getState();
+            this.engine.submitAction(currentState.activePlayerId, { type: 'ADVANCE_TURN' });
+
+            // Check if the game state actually changed
+            const finalState = this.engine.getState();
+            return (finalState.phase !== initialState.phase ||
+                finalState.step !== initialState.step ||
+                finalState.turn !== initialState.turn);
+        } catch (error) {
+            // If we can't advance (e.g., due to required player actions), return false
+            return false;
+        }
+    }    /**
+     * Check if we're currently in a main phase
+     */
+    private isInMainPhase(): boolean {
+        const phase = this.engine.getState().phase;
+        return phase === Phase.PreCombatMain || phase === Phase.PostCombatMain;
+    }
+
+    /**
+     * Check if the current step is automatic (no priority given to players)
+     */
+    private isAutomaticStep(gameState: IGameState): boolean {
+        // According to MTG rules, no players receive priority during:
+        // - Untap step
+        // - Cleanup step (unless state-based actions or triggered abilities need to be processed)
+        return gameState.step === Step.Untap || gameState.step === Step.Cleanup;
+    }
+
+    /**
      * Show help information
      */
     private showHelp(): void {
@@ -331,6 +501,13 @@ export class CLI {
         console.log('  activate <card> <ability> - Activate an ability');
         console.log('  pass                      - Pass priority');
         console.log('  advance                   - Advance to next turn/phase');
+        console.log();
+        console.log('Automation Commands:');
+        console.log('  next-turn                 - Automatically advance to the next turn');
+        console.log('  to-main                   - Try to advance to main phase');
+        console.log('  to-combat                 - Try to advance to combat phase');
+        console.log('  to-end                    - Try to advance to end step');
+        console.log('  to-cleanup                - Try to advance to cleanup step');
         console.log();
         console.log('Utility:');
         console.log('  history                   - Show command history');
@@ -406,7 +583,8 @@ export class CLI {
     private completer(line: string): [string[], string] {
         const commands = [
             'help', 'new-game', 'scenario', 'load', 'save', 'state', 'show', 'play', 'cast',
-            'activate', 'pass', 'advance', 'clear', 'history', 'quit', 'exit'
+            'activate', 'pass', 'advance', 'next-turn', 'to-main', 'to-combat', 'to-end',
+            'to-cleanup', 'clear', 'history', 'quit', 'exit'
         ];
 
         const hits = commands.filter(cmd => cmd.startsWith(line));

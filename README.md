@@ -108,10 +108,55 @@ Fundamental game rules (turn progression, stack operation, priority, SBAs) are h
 
 Use clear, descriptive event names (e.g., EVENT_PHASE_CHANGED, EVENT_CREATURE_DIED, EVENT_SPELL_CAST). See src/core/events/README.md (to be created) for event definitions.
 
-## 4. Directory Structure
+## 4. Command Line Interface (CLI)
+
+The project includes a comprehensive CLI for testing and development purposes. The CLI provides an interactive way to create games, execute actions, and test scenarios.
+
+### Basic Commands
+
+- `new-game [deck1] [deck2]` - Start a new game with specified decks (default: basic)
+- `scenario [name]` - Load a predefined scenario or list available scenarios
+- `load <filename>` - Load a saved game state
+- `save <filename>` - Save the current game state
+- `state`, `show` - Display the current game state
+- `help` - Show all available commands
+
+### Game Actions
+
+- `play <card>` - Play a land from hand
+- `cast <card> [targets...]` - Cast a spell
+- `activate <card> <ability>` - Activate an ability
+- `pass` - Pass priority
+- `advance` - Advance to next turn/phase
+
+### Automation Commands
+
+For testing and development, the CLI includes automation commands that advance the game through multiple phases automatically:
+
+- `next-turn` - Automatically advance to the next turn (passes all priorities and advances through all phases)
+- `to-main` - Try to advance to the main phase (pre-combat or post-combat)
+- `to-combat` - Try to advance to the combat phase
+- `to-end` - Try to advance to the end step
+- `to-cleanup` - Try to advance to the cleanup step
+
+These automation commands follow legal MTG rules and will stop if player actions are required (e.g., declaring attackers or blockers).
+
+### Usage Example
+
+```bash
+npm run cli
+
+> new-game
+> to-main
+> play 1
+> to-combat
+> next-turn
+```
+
+## 5. Directory Structure
 > TBD
 
-## 5. Testing Strategy
+## 6. Testing Strategy
 
 - **Unit Tests**: Each module and ability implementation should have focused unit tests verifying its logic in isolation.
 - **Integration Tests**: Test the interaction between core modules (e.g., does casting a spell correctly use the stack, mana, and priority systems?).
