@@ -1,169 +1,167 @@
 # Open Gathering
 
-## 1. Project Overview
+Open Gathering is a headless Magic: The Gathering (MTG) game engine built with TypeScript. It is designed to provide a robust, type-safe, and extensible foundation for running MTG game logic, completely decoupled from any user interface. This allows it to be used for game simulations, as a backend for various frontends (web, desktop, etc.), or for developing AI players.
 
-This project aims to build a robust, headless Magic: The Gathering (MTG) game engine using TypeScript. The primary goal is to create a core logic engine completely decoupled from any user interface, allowing it to run simulations, power different UIs (web, desktop, console), or serve as a backend for AI players.
+## Core Architecture
 
-### Core Principles:
-
-- **Headless First**: All game logic resides in the engine, independent of presentation.
-- **Data-Driven Card Definitions**: Card characteristics (name, cost, types, static text, P/T) are defined in external data files (JSON) for easy expansion.
-- **Code-Mapped Card Logic**: Card abilities and effects are implemented as type-safe TypeScript modules/classes, referenced by keys in the card data. This balances flexibility with maintainability and type safety.
-- **Event-Driven Architecture**: Interactions (especially triggers) are handled via a central event bus, promoting decoupling.
-- **Scalability & Testability**: Designed with modules and clear interfaces to support adding new cards/rules and facilitate comprehensive testing.
-- **Type Safety**: Leveraging TypeScript for robust development.
-- **Initial Scope**: Standard 1v1 MTG play, focusing initially on core mechanics and a subset of cards/keywords. Multiplayer formats (Commander), niche rules (Bands With Other), and complex UI integrations are out of scope for the initial versions.
-
-## 2. Architecture
-
-The engine follows a modular architecture:
+The engine's architecture is modular, emphasizing a clear separation of concerns between the game state, rules enforcement, and card-specific logic.
 
 ```mermaid
 graph LR
-    subgraph Input/Output
-        A[Input Interface API<br/>Player Actions]
-        B[Output Interface API<br/>State Changes, Events, Queries]
+    subgraph "User Interfaces (CLI, Web)"
+        A[Input API] --> C
     end
 
-    subgraph Core Engine
-        C[Game Engine Orchestrator]
-        D[Game State Manager<br/>Zones, Players, Cards]
-        E[Rule Engine<br/>Phases, Stack, Priority, SBAs, Combat]
-        F[Action/Event Bus]
-        G[Card Logic Manager<br/>Ability/Effect Registry & Execution]
+    subgraph "Core Engine"
+        C[Game Engine]
+        D[Game State]
+        E[Rules Engine]
+        F[Event Bus]
+        G[Ability & Effect Registry]
     end
 
-    subgraph Data
-        H[Card Definition Store<br/>JSON Data]
+    subgraph "Data"
+        H[Card Definitions (JSON)]
     end
 
-    A --> C
-    C --> B
-    C -- Manages/Uses --> D
-    C -- Manages/Uses --> E
-    C -- Manages/Uses --> F
-    C -- Manages/Uses --> G
+    C -- Manages --> D
+    C -- Uses --> E
+    C -- Interacts via --> F
+    C -- Looks up --> G
     G -- Reads --> H
     F -- Triggers --> G
-    G -- Modifies --> D
-    E -- Reads/Modifies --> D
-    E -- Uses --> F
-    E -- Manages --> C
+    E -- Modifies --> D
 ```
 
-### Key Modules:
+### Key Modules
 
-- **Game Engine Orchestrator**: The central coordinator. Receives actions, delegates to other modules, manages the main game loop.
-- **Game State Manager**: Holds the canonical game state (players, life, mana, zones like Battlefield, Hand, Library, Graveyard, Stack, Exile). Manages CardInstance objects, each with a unique runtime ID and tracking its current state (tapped, counters, damage, controller, etc.). State changes should ideally be predictable and traceable (potentially using immutable patterns or clear mutation logs).
-- **Rule Engine**: Enforces fundamental MTG rules:
-  - Turn Structure (Phases/Steps)
-  - Priority Handling
-  - Stack Management (LIFO resolution of spells/abilities)
-  - State-Based Actions (SBAs - checking for deaths, player loss, etc.)
-  - Combat Logic
-  - Continuous Effect Application (including Layers - implemented incrementally)
-- **Action/Event Bus**: Decouples actions and consequences. Events (e.g., CreatureEntersBattlefield, CardDrawn) are emitted, and systems (like triggered abilities) subscribe and react.
-- **Card Logic Manager**: Maps ability/effect keys from CardDefinition data to actual TypeScript implementations (IAbility, IEffect interfaces). It instantiates and attaches these logic handlers to CardInstance objects.
-- **Card Definition Store**: Loads and provides access to static card data from JSON files.
-- **Input Interface API**: Defines how external clients (UI, AI, test runner) submit player actions (e.g., castSpell, activateAbility, passPriority, declareAttackers). Includes validation.
-- **Output Interface API**: Defines how the engine communicates back: emitting game state changes (full state or diffs), requesting player decisions (mulligans, targets, blocks), reporting errors, and providing state query methods.
+-   **Game Engine (`src/core/engine.ts`):** The central orchestrator. It initializes the game state and processes player actions, delegating logic to the appropriate modules.
 
-## 3. Key Design Decisions & Implementation Strategy
+-   **Game State (`src/core/game_state`):** Represents the entire state of the game at any point in time, including players, zones (battlefield, hand, library, etc.), and individual card instances. The state is designed to be serializable for easy transport over APIs.
 
-### State Representation
+-   **Rules Engine (`src/core/rules`):** Enforces the fundamental rules of Magic. This includes:
+    -   **Turn Manager:** Manages the progression of turns, phases, and steps.
+    -   **Priority Manager:** Handles the passing of priority between players.
+    -   **Stack Manager:** Manages the stack for spell and ability resolution.
+    -   **State-Based Actions (SBAs):** Checks for and applies automatic game actions like creatures dying from lethal damage.
+    -   **Combat Manager:** Handles all aspects of the combat phase.
 
-The GameStateManager holds the complete state. Each CardInstance has a unique ID during the game. State changes should be clearly communicated via the Output API (initially perhaps full state snapshots on change, later potentially diffs for performance).
+-   **Event Bus (`src/core/events`):** An event-driven system that decouples game actions from their consequences. Events (e.g., `CREATURE_DIED`) are emitted, and other parts of the engine, like triggered abilities, can subscribe and react to them.
 
-### Card Definitions (JSON)
+-   **Card Logic (`src/implementations`):**
+    -   **Data-Driven Definitions:** Static card data (name, cost, types, power/toughness) is defined in JSON files (`data/sets`).
+    -   **Code-Mapped Logic:** Card abilities and effects are implemented as TypeScript classes. An **Ability Registry** (`src/core/abilities/registry.ts`) maps keys from the JSON definitions to their corresponding code implementations. This provides a powerful and type-safe way to define complex card behaviors.
 
-See docs/card_schema.md (to be created) for the detailed JSON structure. Example snippet:
+## Development
 
-```json
-{
-  "id": "mtgjson_uuid_or_similar",
-  "name": "Llanowar Elves",
-  "manaCost": "{G}",
-  "abilities": [
-    {
-      "key": "activated_ability_tap_add_mana",
-      "parameters": { "mana": "{G}" }
-    }
-  ]
-}
+This section provides guidance for developers contributing to the Open Gathering engine.
+
+### Prerequisites
+
+-   Node.js (v18 or higher)
+-   npm (comes with Node.js)
+
+### Installation
+
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/your-username/open-gathering.git
+    cd open-gathering
+    ```
+
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+
+### Key Scripts
+
+-   **Run Tests:**
+    ```bash
+    npm test
+    ```
+
+-   **Compile TypeScript:**
+    ```bash
+    npm run build
+    ```
+
+-   **Check for Type Errors:**
+    ```bash
+    npx tsc --noEmit
+    ```
+
+-   **Start the Game Server:** The engine can be exposed via a WebSocket server for external clients.
+    ```bash
+    npm run server
+    ```
+
+-   **Run the Interactive CLI:** A command-line interface is available for testing and interacting with the engine directly.
+    ```bash
+    npm run cli
+    ```
+
+### CLI Usage
+
+The CLI is a powerful tool for development and testing. It connects to the running game server and allows you to control the game flow.
+
+**Basic Commands:**
+
+-   `new-game [deck1] [deck2]`: Starts a new game.
+-   `scenario [name]`: Loads a predefined game state for testing specific interactions.
+-   `state` or `show`: Displays the current game state.
+-   `help`: Shows all available commands.
+
+**Game Actions:**
+
+-   `play <card>`: Play a land from your hand.
+-   `cast <card> [targets...]`: Cast a spell.
+-   `activate <card> <ability>`: Activate a card's ability.
+-   `pass`: Pass priority to the opponent.
+
+**Automation Commands:**
+
+To speed up testing, the CLI includes commands to automate game progression:
+
+-   `next-turn`: Automatically passes priority until the next turn begins.
+-   `to-main`: Advances to the next main phase.
+-   `to-combat`: Advances to the combat phase.
+-   `to-end`: Advances to the end step.
+
+### Adding a New Card
+
+To add a new card to the engine:
+
+1.  **Define the Card in JSON:** Add a new entry to a relevant file in `data/sets`. Define its static properties like `name`, `manaCost`, `types`, `power`, and `toughness`.
+
+2.  **Implement Abilities (if any):**
+    -   If the card has abilities, create new TypeScript classes in `src/implementations/abilities` or `src/implementations/effects`.
+    -   These classes must implement the appropriate interfaces (e.g., `IActivatedAbility`, `ITriggeredAbility`).
+    -   The logic for the ability (costs, effects, trigger conditions) goes here.
+
+3.  **Register the Ability:**
+    -   In `src/core/abilities/registry.ts`, add a new entry that maps a unique ability `key` to your new ability class.
+    -   Reference this `key` in the card's JSON definition.
+
+4.  **Add a Test:** Create a new test file in the `tests/` directory to verify the card's functionality and any new interactions it introduces.
+
+## Project Structure
+
 ```
-
-### Card Logic (TypeScript)
-
-Abilities/Effects referenced by key in JSON are implemented as TypeScript classes adhering to specific interfaces (e.g., IActivatedAbility, ITriggeredAbility, IStaticAbility, IEffect).
-
-A central AbilityRegistry (likely a Map<string, AbilityFactory>) maps keys like "activated_ability_tap_add_mana" to factory functions that create instances of the corresponding ability class (e.g., TapAddManaAbility).
-
-This approach keeps the definition data-driven but the execution logic in maintainable, testable, type-safe code. See src/core/abilities/README.md (to be created) for interface definitions.
-
-### Core Rules vs. Card Logic
-
-Fundamental game rules (turn progression, stack operation, priority, SBAs) are hard-coded within the Rule Engine, not defined per-card. Card logic hooks into these systems via abilities and effects.
-
-### Event Naming
-
-Use clear, descriptive event names (e.g., EVENT_PHASE_CHANGED, EVENT_CREATURE_DIED, EVENT_SPELL_CAST). See src/core/events/README.md (to be created) for event definitions.
-
-## 4. Command Line Interface (CLI)
-
-The project includes a comprehensive CLI for testing and development purposes. The CLI provides an interactive way to create games, execute actions, and test scenarios by connecting to the HTTP server.
-
-### Basic Commands
-
-- `new-game [deck1] [deck2]` - Start a new game with specified decks (default: basic)
-- `scenario [name]` - Load a predefined scenario or list available scenarios
-- `state`, `show` - Display the current game state
-- `help` - Show all available commands
-
-### Game Actions
-
-- `play <card>` - Play a land from hand
-- `cast <card> [targets...]` - Cast a spell
-- `activate <card> <ability>` - Activate an ability
-- `pass` - Pass priority
-- `advance` - Advance to next turn/phase
-
-### Automation Commands
-
-For testing and development, the CLI includes automation commands that advance the game through multiple phases automatically:
-
-- `next-turn` - Automatically advance to the next turn (passes all priorities and advances through all phases)
-- `to-main` - Try to advance to the main phase (pre-combat or post-combat)
-- `to-combat` - Try to advance to the combat phase
-- `to-end` - Try to advance to the end step
-- `to-cleanup` - Try to advance to the cleanup step
-
-These automation commands follow legal MTG rules and will stop if player actions are required (e.g., declaring attackers or blockers).
-
-### Usage Example
-
-First, start the server:
-```bash
-npm run server
+.
+├── data/             # JSON card definitions
+├── docs/             # Project documentation
+├── src/              # Source code
+│   ├── cli/          # Interactive CLI for testing
+│   ├── core/         # Core game engine logic
+│   │   ├── abilities # Ability interfaces and registry
+│   │   ├── actions   # Player action handlers
+│   │   ├── events    # Event bus and event types
+│   │   ├── game_state# Game state interfaces and classes
+│   │   └── rules     # Game rules enforcement
+│   ├── implementations/ # Concrete implementations of abilities, effects, etc.
+│   ├── server/       # WebSocket server
+│   └── utils/        # Utility functions
+├── tests/            # Unit and integration tests
+└── package.json      # Project dependencies and scripts
 ```
-
-Then, in another terminal, run the CLI:
-```bash
-npm run cli
-
-> new-game
-> state
-> play 1
-> pass
-> pass
-> next-turn
-```
-
-## 5. Directory Structure
-> TBD
-
-## 6. Testing Strategy
-
-- **Unit Tests**: Each module and ability implementation should have focused unit tests verifying its logic in isolation.
-- **Integration Tests**: Test the interaction between core modules (e.g., does casting a spell correctly use the stack, mana, and priority systems?).
-- **Scenario/Interaction Tests**: Test specific card interactions and complex game states to ensure rules accuracy, especially edge cases. Use known rulings as a guide.
-- **Test-Driven Development (TDD) / Behavior-Driven Development (BDD)**: Recommended where applicable, especially for rules and ability logic.

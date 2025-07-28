@@ -2,55 +2,105 @@
   {
     "id": "basic_plains",
     "name": "Plains",
-    "types": ["Land", "Plains"],
+    "manaCost": "",
+    "cmc": 0,
+    "types": [
+      "Land"
+    ],
+    "subtypes": [
+      "Plains"
+    ],
+    "oracleText": "({T}: Add {W}.)",
     "abilities": [
       {
         "key": "inherent_ability_tap_add_mana",
-        "parameters": { "mana": "{W}" }
+        "parameters": {
+          "mana": "{W}"
+        }
       }
     ]
   },
   {
     "id": "basic_island",
     "name": "Island",
-    "types": ["Land", "Island"],
+    "manaCost": "",
+    "cmc": 0,
+    "types": [
+      "Land"
+    ],
+    "subtypes": [
+      "Island"
+    ],
+    "oracleText": "({T}: Add {U}.)",
     "abilities": [
       {
         "key": "inherent_ability_tap_add_mana",
-        "parameters": { "mana": "{U}" }
+        "parameters": {
+          "mana": "{U}"
+        }
       }
     ]
   },
   {
     "id": "basic_swamp",
     "name": "Swamp",
-    "types": ["Land", "Swamp"],
+    "manaCost": "",
+    "cmc": 0,
+    "types": [
+      "Land"
+    ],
+    "subtypes": [
+      "Swamp"
+    ],
+    "oracleText": "({T}: Add {B}.)",
     "abilities": [
       {
         "key": "inherent_ability_tap_add_mana",
-        "parameters": { "mana": "{B}" }
+        "parameters": {
+          "mana": "{B}"
+        }
       }
     ]
   },
   {
     "id": "basic_mountain",
     "name": "Mountain",
-    "types": ["Land", "Mountain"],
+    "manaCost": "",
+    "cmc": 0,
+    "types": [
+      "Land"
+    ],
+    "subtypes": [
+      "Mountain"
+    ],
+    "oracleText": "({T}: Add {R}.)",
     "abilities": [
       {
         "key": "inherent_ability_tap_add_mana",
-        "parameters": { "mana": "{R}" }
+        "parameters": {
+          "mana": "{R}"
+        }
       }
     ]
   },
   {
     "id": "basic_forest",
     "name": "Forest",
-    "types": ["Land", "Forest"],
+    "manaCost": "",
+    "cmc": 0,
+    "types": [
+      "Land"
+    ],
+    "subtypes": [
+      "Forest"
+    ],
+    "oracleText": "({T}: Add {G}.)",
     "abilities": [
       {
         "key": "inherent_ability_tap_add_mana",
-        "parameters": { "mana": "{G}" }
+        "parameters": {
+          "mana": "{G}"
+        }
       }
     ]
   }

@@ -1,5 +1,7 @@
 import { Engine } from '../core/engine';
 import { ICardDefinition } from '../core/game_state/interfaces';
+import { loadCardDefinitions, CardValidationError } from '../utils/card_loader';
+import * as path from 'path';
 
 /**
  * Represents an active game session.
@@ -31,103 +33,29 @@ export class GameSessionManager {
     private sessions: Map<string, GameSession> = new Map();
     private cardDefinitions: Map<string, ICardDefinition> = new Map();
 
-    constructor() {
-        this.loadCardDefinitions();
+    constructor(dataDirectory?: string) {
+        this.loadCardDefinitions(dataDirectory);
     }
 
     /**
-     * Load card definitions from data files.
-     * In a real implementation, this would load from actual data files.
+     * Load card definitions from data files with validation.
+     * @param dataDirectory Optional path to the data directory. Defaults to project root data directory.
      */
-    private loadCardDefinitions(): void {
-        // For now, we'll create some basic sample cards
-        // This should be replaced with actual file loading logic
-        const basicLands = [
-            {
-                id: 'basic_plains',
-                name: 'Plains',
-                manaCost: '',
-                cmc: 0,
-                types: ['Land'],
-                subtypes: ['Plains'],
-                supertypes: [],
-                oracleText: '({T}: Add {W}.)',
-                abilities: [
-                    {
-                        key: 'inherent_ability_tap_add_mana',
-                        parameters: { mana: '{W}' }
-                    }
-                ]
-            },
-            {
-                id: 'basic_island',
-                name: 'Island',
-                manaCost: '',
-                cmc: 0,
-                types: ['Land'],
-                subtypes: ['Island'],
-                supertypes: [],
-                oracleText: '({T}: Add {U}.)',
-                abilities: [
-                    {
-                        key: 'inherent_ability_tap_add_mana',
-                        parameters: { mana: '{U}' }
-                    }
-                ]
-            },
-            {
-                id: 'basic_swamp',
-                name: 'Swamp',
-                manaCost: '',
-                cmc: 0,
-                types: ['Land'],
-                subtypes: ['Swamp'],
-                supertypes: [],
-                oracleText: '({T}: Add {B}.)',
-                abilities: [
-                    {
-                        key: 'inherent_ability_tap_add_mana',
-                        parameters: { mana: '{B}' }
-                    }
-                ]
-            },
-            {
-                id: 'basic_mountain',
-                name: 'Mountain',
-                manaCost: '',
-                cmc: 0,
-                types: ['Land'],
-                subtypes: ['Mountain'],
-                supertypes: [],
-                oracleText: '({T}: Add {R}.)',
-                abilities: [
-                    {
-                        key: 'inherent_ability_tap_add_mana',
-                        parameters: { mana: '{R}' }
-                    }
-                ]
-            },
-            {
-                id: 'basic_forest',
-                name: 'Forest',
-                manaCost: '',
-                cmc: 0,
-                types: ['Land'],
-                subtypes: ['Forest'],
-                supertypes: [],
-                oracleText: '({T}: Add {G}.)',
-                abilities: [
-                    {
-                        key: 'inherent_ability_tap_add_mana',
-                        parameters: { mana: '{G}' }
-                    }
-                ]
-            }
-        ];
+    private loadCardDefinitions(dataDirectory?: string): void {
+        try {
+            // Default to the project's data directory if not specified
+            const defaultDataDir = path.join(__dirname, '..', '..', 'data');
+            const dataDir = dataDirectory || defaultDataDir;
 
-        basicLands.forEach(card => {
-            this.cardDefinitions.set(card.id, card as ICardDefinition);
-        });
+            this.cardDefinitions = loadCardDefinitions(dataDir);
+
+            console.log(`Loaded ${this.cardDefinitions.size} card definitions from ${dataDir}/sets`);
+        } catch (error) {
+            if (error instanceof CardValidationError) {
+                throw new Error(`Card validation failed: ${error.message}`);
+            }
+            throw new Error(`Failed to load card definitions: ${error instanceof Error ? error.message : String(error)}`);
+        }
     }
 
     /**
@@ -271,6 +199,14 @@ export class GameSessionManager {
             abandonedSessions,
             averageSessionDuration: Math.round(averageSessionDuration / 1000) // Convert to seconds
         };
+    }
+
+    /**
+     * Reloads card definitions from data files.
+     * @param dataDirectory Optional path to the data directory
+     */
+    reloadCardDefinitions(dataDirectory?: string): void {
+        this.loadCardDefinitions(dataDirectory);
     }
 
     /**

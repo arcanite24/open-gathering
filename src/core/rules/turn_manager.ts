@@ -1,6 +1,4 @@
 import { IGameState } from '../game_state/interfaces';
-import { CombatManager } from './combat_manager';
-import { SBAChecker } from './sba_checker';
 
 // Define enums for Phases and Steps
 export enum Phase {
@@ -36,7 +34,7 @@ export class TurnManager {
   advance(gameState: IGameState): IGameState {
     // Create a copy of the game state to avoid mutating the original
     const newState = this.copyGameState(gameState);
-    
+
     // Determine the next step/phase
     switch (newState.phase) {
       case Phase.Beginning:
@@ -53,12 +51,12 @@ export class TurnManager {
             break;
         }
         break;
-        
+
       case Phase.PreCombatMain:
         newState.phase = Phase.Combat;
         newState.step = Step.BeginCombat;
         break;
-        
+
       case Phase.Combat:
         switch (newState.step) {
           case Step.BeginCombat:
@@ -79,12 +77,12 @@ export class TurnManager {
             break;
         }
         break;
-        
+
       case Phase.PostCombatMain:
         newState.phase = Phase.Ending;
         newState.step = Step.EndStep;
         break;
-        
+
       case Phase.Ending:
         switch (newState.step) {
           case Step.EndStep:
@@ -104,10 +102,10 @@ export class TurnManager {
         }
         break;
     }
-    
+
     return newState;
   }
-  
+
   /**
    * Creates a shallow copy of the game state.
    * @param gameState The game state to copy
