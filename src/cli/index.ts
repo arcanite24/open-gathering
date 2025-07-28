@@ -29,14 +29,4 @@ program
         await cli.start();
     });
 
-program
-    .command('load')
-    .description('Load a saved game state')
-    .argument('<filename>', 'Game state file to load')
-    .action(async (filename) => {
-        const cli = new CLI();
-        await cli.loadGame(filename);
-        await cli.start();
-    });
-
 program.parse();

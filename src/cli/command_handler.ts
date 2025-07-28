@@ -1,16 +1,26 @@
-import { Engine, Action } from '../core/engine';
+import { Action } from '../core/game_state/interfaces';
 import { IGameState, ICardInstance, IPlayer } from '../core/game_state/interfaces';
 import { Target } from '../core/abilities/interfaces';
 
 export class CommandHandler {
-    constructor(private engine: Engine) { }
+    constructor() { }
+
+    /**
+     * Helper method to get a value from either a Map or plain object
+     */
+    private getFromMapOrObject<T>(mapOrObject: Map<string, T> | Record<string, T>, key: string): T | undefined {
+        if (mapOrObject instanceof Map) {
+            return mapOrObject.get(key);
+        } else {
+            return mapOrObject[key];
+        }
+    }
 
     /**
      * Parse a command string into an Action
      */
-    parseAction(command: string, args: string[]): Action | null {
-        const gameState = this.engine.getState();
-        const priorityPlayer = gameState.players.get(gameState.priorityPlayerId);
+    parseAction(command: string, args: string[], gameState: IGameState): Action | null {
+        const priorityPlayer = this.getFromMapOrObject(gameState.players, gameState.priorityPlayerId);
 
         if (!priorityPlayer) {
             throw new Error('No priority player found');
@@ -46,7 +56,7 @@ export class CommandHandler {
         }
 
         const cardId = this.resolveCardFromHand(args[0], player, gameState);
-        const cardInstance = gameState.cardInstances.get(cardId);
+        const cardInstance = this.getFromMapOrObject(gameState.cardInstances, cardId);
 
         if (!cardInstance?.definition?.types?.includes('Land')) {
             throw new Error('Can only play lands with the play command. Use "cast" for other spells.');
@@ -88,7 +98,7 @@ export class CommandHandler {
      * Resolve a card identifier from hand to actual card ID
      */
     private resolveCardFromHand(identifier: string, player: IPlayer, gameState: IGameState): string {
-        const handZone = gameState.zones.get(player.handZoneId);
+        const handZone = this.getFromMapOrObject(gameState.zones, player.handZoneId);
         if (!handZone) {
             throw new Error('Player has no hand zone');
         }
@@ -109,7 +119,7 @@ export class CommandHandler {
 
         // Try to find by card name
         for (const cardId of handZone.cards) {
-            const cardInstance = gameState.cardInstances.get(cardId);
+            const cardInstance = this.getFromMapOrObject(gameState.cardInstances, cardId);
             if (cardInstance?.definition?.name?.toLowerCase().includes(identifier.toLowerCase())) {
                 return cardId;
             }
@@ -122,7 +132,7 @@ export class CommandHandler {
      * Resolve a card identifier from battlefield to actual card ID
      */
     private resolveCardFromBattlefield(identifier: string, player: IPlayer, gameState: IGameState): string {
-        const battlefieldZone = gameState.zones.get(player.battlefieldZoneId);
+        const battlefieldZone = this.getFromMapOrObject(gameState.zones, player.battlefieldZoneId);
         if (!battlefieldZone) {
             throw new Error('Player has no battlefield zone');
         }
@@ -143,7 +153,7 @@ export class CommandHandler {
 
         // Try to find by card name
         for (const cardId of battlefieldZone.cards) {
-            const cardInstance = gameState.cardInstances.get(cardId);
+            const cardInstance = this.getFromMapOrObject(gameState.cardInstances, cardId);
             if (cardInstance?.definition?.name?.toLowerCase().includes(identifier.toLowerCase())) {
                 return cardId;
             }
@@ -156,7 +166,7 @@ export class CommandHandler {
      * Resolve ability identifier to ability ID
      */
     private resolveAbilityId(identifier: string, cardId: string, gameState: IGameState): string {
-        const cardInstance = gameState.cardInstances.get(cardId);
+        const cardInstance = this.getFromMapOrObject(gameState.cardInstances, cardId);
         if (!cardInstance) {
             throw new Error(`Card instance not found: ${cardId}`);
         }
@@ -193,7 +203,10 @@ export class CommandHandler {
 
         for (const targetStr of targetStrings) {
             // Check if it's a player
-            if (gameState.players.has(targetStr)) {
+            const hasPlayer = gameState.players instanceof Map
+                ? gameState.players.has(targetStr)
+                : targetStr in gameState.players;
+            if (hasPlayer) {
                 targets.push({
                     type: 'player',
                     playerId: targetStr
@@ -215,16 +228,32 @@ export class CommandHandler {
             if (!isNaN(index)) {
                 // Find the card at that index across all battlefields
                 let found = false;
-                for (const [playerId, player] of gameState.players) {
-                    const battlefieldZone = gameState.zones.get(player.battlefieldZoneId);
-                    if (battlefieldZone && index >= 1 && index <= battlefieldZone.cards.length) {
-                        const cardId = battlefieldZone.cards[index - 1];
-                        targets.push({
-                            type: 'card',
-                            cardInstanceId: cardId
-                        });
-                        found = true;
-                        break;
+                if (gameState.players instanceof Map) {
+                    for (const [playerId, player] of gameState.players) {
+                        const battlefieldZone = this.getFromMapOrObject(gameState.zones, player.battlefieldZoneId);
+                        if (battlefieldZone && index >= 1 && index <= battlefieldZone.cards.length) {
+                            const cardId = battlefieldZone.cards[index - 1];
+                            targets.push({
+                                type: 'card',
+                                cardInstanceId: cardId
+                            });
+                            found = true;
+                            break;
+                        }
+                    }
+                } else {
+                    for (const [playerId, player] of Object.entries(gameState.players)) {
+                        const typedPlayer = player as IPlayer;
+                        const battlefieldZone = this.getFromMapOrObject(gameState.zones, typedPlayer.battlefieldZoneId);
+                        if (battlefieldZone && index >= 1 && index <= battlefieldZone.cards.length) {
+                            const cardId = battlefieldZone.cards[index - 1];
+                            targets.push({
+                                type: 'card',
+                                cardInstanceId: cardId
+                            });
+                            found = true;
+                            break;
+                        }
                     }
                 }
 
@@ -253,85 +282,5 @@ export class CommandHandler {
         }
 
         return targets;
-    }
-
-    /**
-     * Get help text for a specific command
-     */
-    getCommandHelp(command: string): string {
-        switch (command) {
-            case 'play':
-                return 'play <card> - Play a land from your hand. Use card index (1-based) or card name.';
-
-            case 'cast':
-                return 'cast <card> [targets...] - Cast a spell from your hand. Specify targets if required.';
-
-            case 'activate':
-                return 'activate <card> <ability> [targets...] - Activate an ability on a permanent you control.';
-
-            case 'pass':
-                return 'pass - Pass priority to the next player.';
-
-            case 'advance':
-                return 'advance - Advance to the next turn phase/step (only available to active player).';
-
-            default:
-                return `No help available for command: ${command}`;
-        }
-    }
-
-    /**
-     * Validate if a command can be executed in the current game state
-     */
-    validateCommand(command: string, args: string[]): { valid: boolean; reason?: string } {
-        const gameState = this.engine.getState();
-        const priorityPlayer = gameState.players.get(gameState.priorityPlayerId);
-
-        if (!priorityPlayer) {
-            return { valid: false, reason: 'No priority player found' };
-        }
-
-        try {
-            switch (command) {
-                case 'play':
-                    if (args.length === 0) {
-                        return { valid: false, reason: 'No card specified' };
-                    }
-
-                    // Check if player has any lands in hand
-                    const handZone = gameState.zones.get(priorityPlayer.handZoneId);
-                    if (!handZone || handZone.cards.length === 0) {
-                        return { valid: false, reason: 'No cards in hand' };
-                    }
-
-                    // Check if player can play a land this turn
-                    if (priorityPlayer.landsPlayedThisTurn > 0) {
-                        return { valid: false, reason: 'Already played a land this turn' };
-                    }
-
-                    return { valid: true };
-
-                case 'cast':
-                    if (args.length === 0) {
-                        return { valid: false, reason: 'No card specified' };
-                    }
-                    return { valid: true };
-
-                case 'activate':
-                    if (args.length < 2) {
-                        return { valid: false, reason: 'Need card and ability identifiers' };
-                    }
-                    return { valid: true };
-
-                case 'pass':
-                case 'advance':
-                    return { valid: true };
-
-                default:
-                    return { valid: false, reason: `Unknown command: ${command}` };
-            }
-        } catch (error) {
-            return { valid: false, reason: (error as Error).message };
-        }
     }
 }

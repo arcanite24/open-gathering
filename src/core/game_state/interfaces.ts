@@ -1,5 +1,13 @@
-import { IActivatedAbility, IStaticAbility, ITriggeredAbility } from '../abilities/interfaces';
+import { IActivatedAbility, IStaticAbility, ITriggeredAbility, Target } from '../abilities/interfaces';
 import { AbilityRegistry } from '../abilities/registry';
+
+// Define the Action type
+export type Action =
+  | { type: 'PLAY_LAND', cardId: string }
+  | { type: 'PASS_PRIORITY' }
+  | { type: 'ADVANCE_TURN' }
+  | { type: 'ACTIVATE_ABILITY', cardId: string, abilityId: string, targets?: Target[] }
+  | { type: 'CAST_SPELL', cardId: string, targets?: Target[] };
 
 /**
  * Represents a player's mana pool with colored mana amounts.

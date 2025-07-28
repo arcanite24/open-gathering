@@ -42,9 +42,9 @@ describe('WebSocketManager', () => {
             const clientId = webSocketManager.handleConnection(mockWebSocket);
             const stats = webSocketManager.getStats();
 
-            expect(stats.totalClients).toBe(1);
-            expect(stats.authenticatedClients).toBe(0);
-            expect(stats.gamesWithClients).toBe(0);
+        expect((stats as any).totalClients).toBe(1);
+        expect((stats as any).authenticatedClients).toBe(0);
+        expect((stats as any).gamesWithClients).toBe(0);
         });
     });
 

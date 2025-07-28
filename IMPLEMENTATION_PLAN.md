@@ -668,7 +668,7 @@
 
 ## Phase 8: Visual Testing Tooling
 
-### Task ID: TOOL-01
+### Task ID: TOOL-01 ✅ COMPLETED
 
 **Phase:** 8 - Visual Testing Tooling
 
@@ -719,3 +719,25 @@
 **Dependencies:** TOOL-01.
 
 **Verification:** Automation commands work correctly; they properly handle priority passing; they stop when player actions are required; tests pass; documentation is updated.
+
+### Task ID: TOOL-03 ✅ COMPLETED
+
+**Phase:** 8 - Visual Testing Tooling
+
+**Goal:** Migrate the CLI tool to use the HTTP API instead of direct engine calls.
+
+**Input/Context:** Existing CLI tool (TOOL-01), HTTP Server (SERVER-01).
+
+**Instructions:**
+1. Refactor the CLI to remove direct dependency on the `Engine` class.
+2. Implement an HTTP client within the CLI to communicate with the local game server.
+3. Update all CLI commands (new-game, show-state, submit-action, etc.) to use the corresponding HTTP API endpoints.
+4. Manage game state (like `gameId`) within the CLI instance.
+5. Remove any functionality that is no longer supported by the API (e.g., local save/load).
+6. Update all related tests to mock HTTP requests instead of the engine.
+
+**Deliverables:** A CLI tool that functions as a client to the HTTP server, updated tests.
+
+**Dependencies:** TOOL-01, SERVER-01.
+
+**Verification:** CLI successfully communicates with the server; all commands work as expected through the API; tests pass.

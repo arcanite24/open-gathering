@@ -3,6 +3,28 @@ import { IGameState, IPlayer, IZone, ICardInstance, ICardDefinition, ManaPool } 
 export class GameStateDisplay {
 
     /**
+     * Helper method to get a value from either a Map or plain object
+     */
+    private getFromMapOrObject<T>(mapOrObject: Map<string, T> | Record<string, T>, key: string): T | undefined {
+        if (mapOrObject instanceof Map) {
+            return mapOrObject.get(key);
+        } else {
+            return mapOrObject[key];
+        }
+    }
+
+    /**
+     * Helper method to get keys from either a Map or plain object
+     */
+    private getKeysFromMapOrObject<T>(mapOrObject: Map<string, T> | Record<string, T>): string[] {
+        if (mapOrObject instanceof Map) {
+            return Array.from(mapOrObject.keys());
+        } else {
+            return Object.keys(mapOrObject);
+        }
+    }
+
+    /**
      * Display the complete game state in a formatted way
      */
     showGameState(gameState: IGameState): void {
@@ -12,10 +34,10 @@ export class GameStateDisplay {
         console.log('='.repeat(80));
 
         // Show both players
-        const playerIds = Array.from(gameState.players.keys()).sort();
+        const playerIds = this.getKeysFromMapOrObject(gameState.players).sort();
 
         for (const playerId of playerIds) {
-            const player = gameState.players.get(playerId);
+            const player = this.getFromMapOrObject(gameState.players, playerId);
             if (player) {
                 this.showPlayer(player, gameState);
                 console.log();
@@ -23,7 +45,7 @@ export class GameStateDisplay {
         }
 
         // Show stack if not empty
-        const stackZone = gameState.zones.get(gameState.stackZoneId);
+        const stackZone = this.getFromMapOrObject(gameState.zones, gameState.stackZoneId);
         if (stackZone && stackZone.cards.length > 0) {
             this.showStack(stackZone, gameState);
             console.log();
@@ -61,32 +83,32 @@ export class GameStateDisplay {
      */
     private showPlayerZones(player: IPlayer, gameState: IGameState): void {
         // Hand
-        const handZone = gameState.zones.get(player.handZoneId);
+        const handZone = this.getFromMapOrObject(gameState.zones, player.handZoneId);
         if (handZone) {
             console.log(`│  Hand (${handZone.cards.length}): ${this.formatZoneCards(handZone, gameState, true)}`);
         }
 
         // Battlefield
-        const battlefieldZone = gameState.zones.get(player.battlefieldZoneId);
+        const battlefieldZone = this.getFromMapOrObject(gameState.zones, player.battlefieldZoneId);
         if (battlefieldZone && battlefieldZone.cards.length > 0) {
             console.log(`│  Battlefield (${battlefieldZone.cards.length}):`);
             this.showBattlefieldCards(battlefieldZone, gameState);
         }
 
         // Library
-        const libraryZone = gameState.zones.get(player.libraryZoneId);
+        const libraryZone = this.getFromMapOrObject(gameState.zones, player.libraryZoneId);
         if (libraryZone) {
             console.log(`│  Library: ${libraryZone.cards.length} cards`);
         }
 
         // Graveyard
-        const graveyardZone = gameState.zones.get(player.graveyardZoneId);
+        const graveyardZone = this.getFromMapOrObject(gameState.zones, player.graveyardZoneId);
         if (graveyardZone && graveyardZone.cards.length > 0) {
             console.log(`│  Graveyard (${graveyardZone.cards.length}): ${this.formatZoneCards(graveyardZone, gameState)}`);
         }
 
         // Exile
-        const exileZone = gameState.zones.get(player.exileZoneId);
+        const exileZone = this.getFromMapOrObject(gameState.zones, player.exileZoneId);
         if (exileZone && exileZone.cards.length > 0) {
             console.log(`│  Exile (${exileZone.cards.length}): ${this.formatZoneCards(exileZone, gameState)}`);
         }
@@ -172,9 +194,9 @@ export class GameStateDisplay {
         const stackCards = [...stackZone.cards].reverse();
 
         stackCards.forEach((cardId, index) => {
-            const card = gameState.cardInstances.get(cardId);
+            const card = this.getFromMapOrObject(gameState.cardInstances, cardId);
             if (card) {
-                const controller = gameState.players.get(card.controllerPlayerId);
+                const controller = this.getFromMapOrObject(gameState.players, card.controllerPlayerId);
                 console.log(`│  ${index + 1}. ${card.definition?.name || 'Unknown'} (${controller?.id || 'Unknown'})`);
             }
         });
@@ -207,26 +229,37 @@ export class GameStateDisplay {
     showCompactState(gameState: IGameState): void {
         console.log(`Turn ${gameState.turn} | ${gameState.phase}/${gameState.step} | Active: ${gameState.activePlayerId} | Priority: ${gameState.priorityPlayerId}`);
 
-        gameState.players.forEach((player, playerId) => {
-            const hand = gameState.zones.get(player.handZoneId);
-            const battlefield = gameState.zones.get(player.battlefieldZoneId);
-            const library = gameState.zones.get(player.libraryZoneId);
+        if (gameState.players instanceof Map) {
+            gameState.players.forEach((player, playerId) => {
+                const hand = this.getFromMapOrObject(gameState.zones, player.handZoneId);
+                const battlefield = this.getFromMapOrObject(gameState.zones, player.battlefieldZoneId);
+                const library = this.getFromMapOrObject(gameState.zones, player.libraryZoneId);
 
-            console.log(`${playerId}: ${player.life} life, ${hand?.cards.length || 0} hand, ${battlefield?.cards.length || 0} battlefield, ${library?.cards.length || 0} library`);
-        });
+                console.log(`${playerId}: ${player.life} life, ${hand?.cards.length || 0} hand, ${battlefield?.cards.length || 0} battlefield, ${library?.cards.length || 0} library`);
+            });
+        } else {
+            Object.entries(gameState.players).forEach(([playerId, player]) => {
+                const typedPlayer = player as IPlayer;
+                const hand = this.getFromMapOrObject(gameState.zones, typedPlayer.handZoneId);
+                const battlefield = this.getFromMapOrObject(gameState.zones, typedPlayer.battlefieldZoneId);
+                const library = this.getFromMapOrObject(gameState.zones, typedPlayer.libraryZoneId);
+
+                console.log(`${playerId}: ${typedPlayer.life} life, ${hand?.cards.length || 0} hand, ${battlefield?.cards.length || 0} battlefield, ${library?.cards.length || 0} library`);
+            });
+        }
     }
 
     /**
      * Show available actions for the current player
      */
     showAvailableActions(gameState: IGameState): void {
-        const priorityPlayer = gameState.players.get(gameState.priorityPlayerId);
+        const priorityPlayer = this.getFromMapOrObject(gameState.players, gameState.priorityPlayerId);
         if (!priorityPlayer) return;
 
         console.log(`\nAvailable actions for ${priorityPlayer.id}:`);
 
         // Check for playable lands in hand
-        const handZone = gameState.zones.get(priorityPlayer.handZoneId);
+        const handZone = this.getFromMapOrObject(gameState.zones, priorityPlayer.handZoneId);
         if (handZone) {
             const playableLands = handZone.cards.filter(cardId => {
                 const card = gameState.cardInstances.get(cardId);
@@ -239,10 +272,10 @@ export class GameStateDisplay {
         }
 
         // Check for activatable abilities
-        const battlefieldZone = gameState.zones.get(priorityPlayer.battlefieldZoneId);
+        const battlefieldZone = this.getFromMapOrObject(gameState.zones, priorityPlayer.battlefieldZoneId);
         if (battlefieldZone && battlefieldZone.cards.length > 0) {
             const hasActivatableAbilities = battlefieldZone.cards.some(cardId => {
-                const card = gameState.cardInstances.get(cardId);
+                const card = this.getFromMapOrObject(gameState.cardInstances, cardId);
                 return card?.activatedAbilities && card.activatedAbilities.length > 0;
             });
 

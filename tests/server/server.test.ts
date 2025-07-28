@@ -17,7 +17,7 @@ describe('Server API', () => {
                 await server.stop();
             } catch (error) {
                 // Server might already be stopped, ignore errors
-                console.warn('Server cleanup warning:', error.message);
+                console.warn('Server cleanup warning:', (error as Error).message);
             }
         }
     });

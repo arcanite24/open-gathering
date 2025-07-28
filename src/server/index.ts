@@ -5,6 +5,7 @@ import WebSocket from 'ws';
 import { createServer, Server as HttpServer } from 'http';
 import { GameSessionManager } from './game_session_manager';
 import { WebSocketManager } from './websocket_manager';
+import { serializeGameState } from '../utils/serialization';
 import {
     CreateGameRequest,
     CreateGameResponse,
@@ -235,7 +236,7 @@ export class Server {
 
             const response: CreateGameResponse = {
                 gameId: session.id,
-                gameState: session.engine.getState()
+                gameState: serializeGameState(session.engine.getState())
             };
 
             console.log(`Game created: ${session.id} with decks of ${player1Deck.length} and ${player2Deck.length} cards`);
@@ -264,7 +265,7 @@ export class Server {
             }
 
             const response: GetGameStateResponse = {
-                gameState: session.engine.getState()
+                gameState: serializeGameState(session.engine.getState())
             };
 
             res.json(response);
@@ -310,7 +311,7 @@ export class Server {
 
                 const newGameState = session.engine.getState();
                 const response: SubmitActionResponse = {
-                    gameState: newGameState,
+                    gameState: serializeGameState(newGameState),
                     success: true
                 };
 

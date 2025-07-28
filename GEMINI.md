@@ -1,5 +1,3 @@
-## Project Overview
-
 This is a TypeScript project to build a headless Magic: The Gathering (MTG) game engine. The engine will be decoupled from any UI and run purely the game logic.
 
 ## Key Design Principles
@@ -10,34 +8,6 @@ This is a TypeScript project to build a headless Magic: The Gathering (MTG) game
 - Event-driven architecture
 - Scalability and testability
 - Type safety
-- Initial scope: Standard 1v1 MTG
-
-## Directory Structure
-
-```
-src/
-├── core/
-│   ├── game_state/
-│   ├── rules/
-│   ├── events/
-│   ├── abilities/
-│   └── engine.ts
-├── implementations/
-│   ├── abilities/
-│   └── effects/
-├── interfaces/
-├── utils/
-└── index.ts
-data/
-└── sets/
-tests/
-├── core/
-├── implementations/
-└── scenarios/
-docs/
-```
-
-## How to Help
 
 When helping with implementation tasks, please:
 1. Follow the architecture and interfaces defined in the README
@@ -52,3 +22,4 @@ When helping with implementation tasks, please:
 - Always check for linting and compile errors. Use `npx tsc --noEmit` to check for TypeScript errors without generating output files.
 - When creating new tests, use `npx tsc --noEmit -p tsconfig.test.json` to ensure they compile correctly.
 - Use enums and interfaces to define clear contracts for your code, avoid at all costs using magic strings or numbers
+- Re-use as much code as possible, avoid duplicating logic, mainly when writing tests. There's the folder `tests/util` that houses utility files to help with common test setups. Add any new utilities there.

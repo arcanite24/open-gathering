@@ -110,14 +110,12 @@ Use clear, descriptive event names (e.g., EVENT_PHASE_CHANGED, EVENT_CREATURE_DI
 
 ## 4. Command Line Interface (CLI)
 
-The project includes a comprehensive CLI for testing and development purposes. The CLI provides an interactive way to create games, execute actions, and test scenarios.
+The project includes a comprehensive CLI for testing and development purposes. The CLI provides an interactive way to create games, execute actions, and test scenarios by connecting to the HTTP server.
 
 ### Basic Commands
 
 - `new-game [deck1] [deck2]` - Start a new game with specified decks (default: basic)
 - `scenario [name]` - Load a predefined scenario or list available scenarios
-- `load <filename>` - Load a saved game state
-- `save <filename>` - Save the current game state
 - `state`, `show` - Display the current game state
 - `help` - Show all available commands
 
@@ -143,13 +141,20 @@ These automation commands follow legal MTG rules and will stop if player actions
 
 ### Usage Example
 
+First, start the server:
+```bash
+npm run server
+```
+
+Then, in another terminal, run the CLI:
 ```bash
 npm run cli
 
 > new-game
-> to-main
+> state
 > play 1
-> to-combat
+> pass
+> pass
 > next-turn
 ```
 
