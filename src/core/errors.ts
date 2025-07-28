@@ -5,37 +5,45 @@ export enum ErrorCode {
   UnknownError = "UNKNOWN_ERROR",
   CommandNotFound = "COMMAND_NOT_FOUND",
   InvalidCommand = "INVALID_COMMAND",
-  
+
   // Card-related errors
   InvalidCard = "INVALID_CARD",
   CardNotFound = "CARD_NOT_FOUND",
   CardNotInHand = "CARD_NOT_IN_HAND",
   CardNotOnBattlefield = "CARD_NOT_ON_BATTLEFIELD",
-  
+
   // Target-related errors
   InvalidTarget = "INVALID_TARGET",
   NoValidTargets = "NO_VALID_TARGETS",
   TargetRequired = "TARGET_REQUIRED",
-  
+
   // Zone-related errors
   InvalidZone = "INVALID_ZONE",
   ZoneNotFound = "ZONE_NOT_FOUND",
-  
+
   // Game state errors
   NotEnoughMana = "NOT_ENOUGH_MANA",
   NotYourTurn = "NOT_YOUR_TURN",
   ActionNotAllowed = "ACTION_NOT_ALLOWED",
   GamePhaseRestriction = "GAME_PHASE_RESTRICTION",
-  
+
+  // Spell casting errors
+  CannotCastCard = "CANNOT_CAST_CARD",
+  WrongCardType = "WRONG_CARD_TYPE",
+  StackNotEmpty = "STACK_NOT_EMPTY",
+
+  // Priority errors
+  NotPriorityPlayer = "NOT_PRIORITY_PLAYER",
+
   // Player-related errors
   PlayerNotFound = "PLAYER_NOT_FOUND",
   NotActivePlayer = "NOT_ACTIVE_PLAYER",
-  
+
   // Network/Server errors
   NetworkError = "NETWORK_ERROR",
   ServerError = "SERVER_ERROR",
   GameNotFound = "GAME_NOT_FOUND",
-  
+
   // CLI-specific errors
   InvalidArguments = "INVALID_ARGUMENTS",
   InsufficientArguments = "INSUFFICIENT_ARGUMENTS",
@@ -58,18 +66,18 @@ export class GameError extends Error {
    */
   toDisplayString(): string {
     let display = this.message;
-    
+
     if (this.suggestion) {
       display += `\n💡 Suggestion: ${this.suggestion}`;
     }
-    
+
     if (this.context && Object.keys(this.context).length > 0) {
       display += '\n📝 Context:';
       for (const [key, value] of Object.entries(this.context)) {
         display += `\n  - ${key}: ${value}`;
       }
     }
-    
+
     return display;
   }
 
@@ -85,7 +93,7 @@ export class GameError extends Error {
         { originalError: originalError.message }
       );
     }
-    
+
     if (originalError.message.includes('timeout') || originalError.message.includes('ETIMEDOUT')) {
       return new GameError(
         ErrorCode.NetworkError,
@@ -94,7 +102,7 @@ export class GameError extends Error {
         { originalError: originalError.message }
       );
     }
-    
+
     return new GameError(
       ErrorCode.ServerError,
       originalError.message,

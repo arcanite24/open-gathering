@@ -5,6 +5,7 @@ import { Zone } from '../../../src/core/game_state/zone';
 import { CardInstance } from '../../../src/core/game_state/card_instance';
 import { Phase } from '../../../src/core/rules/turn_manager';
 import { AbilityRegistry, initializeAbilityRegistry } from '../../../src/core/abilities/registry';
+import { GameError } from '../../../src/core/errors';
 
 describe('Cast Spell Action - Mana Cost Functions', () => {
   describe('calculateCost', () => {
@@ -199,43 +200,55 @@ describe('Cast Spell Action - Game State Functions', () => {
 
   describe('canCastSpell', () => {
     it('should allow casting a creature during the player\'s main phase', () => {
+      // Add enough mana to cast the creature ({1}{G})
+      player1.manaPool.generic = 1;
+      player1.manaPool.G = 1;
       const result = canCastSpell(gameState, player1.id, creatureCard.id);
       expect(result).toBe(true);
     });
 
     it('should not allow casting a creature during another player\'s turn', () => {
       gameState.activePlayerId = player2.id;
-      const result = canCastSpell(gameState, player1.id, creatureCard.id);
-      expect(result).toBe(false);
+      expect(() => {
+        canCastSpell(gameState, player1.id, creatureCard.id);
+      }).toThrow(GameError);
     });
 
     it('should not allow casting a creature outside of main phases', () => {
       gameState.phase = Phase.Combat;
-      const result = canCastSpell(gameState, player1.id, creatureCard.id);
-      expect(result).toBe(false);
+      expect(() => {
+        canCastSpell(gameState, player1.id, creatureCard.id);
+      }).toThrow(GameError);
     });
 
     it('should not allow casting a creature without priority', () => {
       gameState.priorityPlayerId = player2.id;
-      const result = canCastSpell(gameState, player1.id, creatureCard.id);
-      expect(result).toBe(false);
+      expect(() => {
+        canCastSpell(gameState, player1.id, creatureCard.id);
+      }).toThrow(GameError);
     });
 
     it('should not allow casting a creature not in hand', () => {
       // Remove the card from hand
       handZone.cards = [];
-      const result = canCastSpell(gameState, player1.id, creatureCard.id);
-      expect(result).toBe(false);
+      expect(() => {
+        canCastSpell(gameState, player1.id, creatureCard.id);
+      }).toThrow(GameError);
     });
 
     it('should not allow casting a creature that doesn\'t exist', () => {
-      const result = canCastSpell(gameState, player1.id, 'nonexistent');
-      expect(result).toBe(false);
+      expect(() => {
+        canCastSpell(gameState, player1.id, 'nonexistent');
+      }).toThrow(GameError);
     });
   });
 
   describe('executeCastSpell', () => {
     it('should move a creature from hand to stack', () => {
+      // Add enough mana to cast the creature ({1}{G})
+      player1.manaPool.generic = 1;
+      player1.manaPool.G = 1;
+
       const newState = executeCastSpell(gameState, player1.id, creatureCard.id);
 
       // Check that the card is no longer in hand
@@ -249,16 +262,20 @@ describe('Cast Spell Action - Game State Functions', () => {
       // Check that the card's zone has been updated
       const newCardInstance = newState.cardInstances.get(creatureCard.id);
       expect(newCardInstance?.currentZoneId).toBe(stackZone.id);
+
+      // Check that mana was paid
+      const newPlayer = newState.players.get(player1.id);
+      expect(newPlayer?.manaPool.generic).toBe(0);
+      expect(newPlayer?.manaPool.G).toBe(0);
     });
 
-    it('should not modify state when casting an invalid spell', () => {
+    it('should throw error when casting an invalid spell', () => {
       // Make it so the player doesn't have priority
       gameState.priorityPlayerId = player2.id;
 
-      const newState = executeCastSpell(gameState, player1.id, creatureCard.id);
-
-      // State should be unchanged
-      expect(newState).toEqual(gameState);
+      expect(() => {
+        executeCastSpell(gameState, player1.id, creatureCard.id);
+      }).toThrow(GameError);
     });
   });
 });

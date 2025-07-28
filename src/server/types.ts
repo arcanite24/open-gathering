@@ -50,6 +50,12 @@ export interface SubmitActionResponse {
     success: boolean;
     /** Error message if action failed */
     error?: string;
+    /** Error code for programmatic handling */
+    errorCode?: string;
+    /** Helpful suggestion for fixing the error */
+    suggestion?: string;
+    /** Additional context about the error */
+    context?: Record<string, any>;
 }
 
 /**

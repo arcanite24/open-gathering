@@ -53,7 +53,7 @@ export class CommandHandler {
                     ErrorCode.CommandNotFound,
                     `Unknown game command: ${command}`,
                     'Available commands: play, cast, activate, pass, advance',
-                    { 
+                    {
                         command,
                         availableCommands: ['play', 'cast', 'activate', 'pass', 'advance']
                     }
@@ -70,7 +70,7 @@ export class CommandHandler {
                 ErrorCode.InsufficientArguments,
                 'Missing card identifier for play command',
                 'Specify which card to play using its number or name',
-                { 
+                {
                     usage: 'play <card_identifier>',
                     example: 'play 1  or  play Plains'
                 }
@@ -173,7 +173,7 @@ export class CommandHandler {
                     ErrorCode.InvalidCard,
                     `Invalid card number ${index}`,
                     `Choose a number between 1 and ${handZone.cards.length}`,
-                    { 
+                    {
                         providedIndex: index,
                         validRange: `1-${handZone.cards.length}`,
                         handSize: handZone.cards.length
@@ -360,10 +360,10 @@ export class CommandHandler {
         const index = parseInt(identifier);
         if (!isNaN(index)) {
             if (index < 1 || index > abilities.length) {
-                const abilityList = abilities.map((ability, i) => 
+                const abilityList = abilities.map((ability, i) =>
                     `${i + 1}. ${ability.id}`
                 );
-                
+
                 throw new GameError(
                     ErrorCode.InvalidTarget,
                     `Invalid ability number ${index}`,
@@ -387,7 +387,7 @@ export class CommandHandler {
         }
 
         // Show available abilities
-        const abilityList = abilities.map((ability, i) => 
+        const abilityList = abilities.map((ability, i) =>
             `${i + 1}. ${ability.id}`
         );
 

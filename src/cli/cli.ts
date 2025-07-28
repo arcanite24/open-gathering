@@ -299,13 +299,13 @@ export class CLI {
                     ErrorCode.CommandNotFound,
                     `Unknown command: ${command}`,
                     'Type "help" for available commands',
-                    { 
+                    {
                         command,
                         availableCommands: ['help', 'state', 'new-game', 'scenario', 'play', 'cast', 'activate', 'pass', 'advance', 'clear', 'history']
                     }
                 );
                 ErrorReporter.displayError(error, this.gameState || undefined);
-                
+
                 // Show contextual help if we have a game state
                 if (this.gameState) {
                     ErrorReporter.showContextualHelp(this.gameState);

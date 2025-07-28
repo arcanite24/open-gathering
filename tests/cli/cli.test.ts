@@ -2,6 +2,7 @@ import { CLI } from '../../src/cli/cli';
 import * as fs from 'fs';
 import { IGameState, IPlayer, IZone, ICardInstance, ICardDefinition } from '../../src/core/game_state/interfaces';
 import { getScenario, Scenario } from '../../src/cli/scenarios/scenarios';
+import { serializeGameState } from '../../src/utils/serialization';
 
 // Mock the apiRequest method
 const mockApiRequest = jest.fn();
@@ -70,7 +71,7 @@ describe('CLI', () => {
   it('should start a new game', async () => {
     mockApiRequest.mockResolvedValue({
       gameId: 'game1',
-      gameState: mockGameState,
+      gameState: serializeGameState(mockGameState),
     });
 
     // Mock loadDeck to avoid file system access
@@ -83,7 +84,7 @@ describe('CLI', () => {
       player2Deck: ['card1'],
     });
     expect((cli as any).gameId).toBe('game1');
-    expect((cli as any).gameState).toBe(mockGameState);
+    expect((cli as any).gameState).toEqual(mockGameState);
   });
 
   it('should load a scenario', async () => {
@@ -97,7 +98,7 @@ describe('CLI', () => {
     
     mockApiRequest.mockResolvedValue({
       gameId: 'game1',
-      gameState: mockGameState,
+      gameState: serializeGameState(mockGameState),
     });
 
     await cli.loadScenario('Basic Lands');
@@ -108,6 +109,6 @@ describe('CLI', () => {
         player2Deck: ['p2card'],
     });
     expect((cli as any).gameId).toBe('game1');
-    expect((cli as any).gameState).toBe(mockGameState);
+    expect((cli as any).gameState).toEqual(mockGameState);
   });
 });

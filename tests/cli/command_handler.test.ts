@@ -84,7 +84,7 @@ describe('CommandHandler', () => {
         it('should throw error for invalid card index', () => {
             expect(() => {
                 commandHandler.parseAction('play', ['10'], mockGameState);
-            }).toThrow('Invalid card index');
+            }).toThrow('Invalid card number');
         });
 
         it('should throw error for non-land play action', () => {
@@ -93,7 +93,7 @@ describe('CommandHandler', () => {
             mockGameState.zones.get('hand1')!.cards.push('card2');
             expect(() => {
                 commandHandler.parseAction('play', ['2'], mockGameState);
-            }).toThrow('Can only play lands with the play command');
+            }).toThrow('Cannot play Creature - only lands can be played with the play command');
         });
 
         it('should throw error for unknown command', () => {

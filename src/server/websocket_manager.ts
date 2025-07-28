@@ -50,6 +50,9 @@ export interface ActionResultMessage {
     success: boolean;
     gameState: IGameState;
     error?: string;
+    errorCode?: string;
+    suggestion?: string;
+    context?: Record<string, any>;
     action: Action;
     playerId: string;
 }

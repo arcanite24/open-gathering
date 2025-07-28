@@ -1,5 +1,6 @@
 import { IGameState, IPlayer, IZone, ICardInstance, ICardDefinition, ManaPool } from '../game_state/interfaces';
 import { Phase } from '../rules/turn_manager';
+import { GameError, ErrorCode } from '../errors';
 
 // Define ManaCost interface
 export interface ManaCost {
@@ -87,11 +88,11 @@ export function canPayCost(player: IPlayer, cost: ManaCost): boolean {
 
   // Calculate how much colored mana the player has that could be used for generic costs
   const availableColoredMana =
-    player.manaPool.W + 
-    player.manaPool.U + 
-    player.manaPool.B + 
-    player.manaPool.R + 
-    player.manaPool.G + 
+    player.manaPool.W +
+    player.manaPool.U +
+    player.manaPool.B +
+    player.manaPool.R +
+    player.manaPool.G +
     player.manaPool.C;
 
   // Calculate how much generic mana the player has
@@ -101,7 +102,7 @@ export function canPayCost(player: IPlayer, cost: ManaCost): boolean {
   const totalAvailableMana = availableColoredMana + availableGenericMana;
 
   // Total required mana (colored + generic)
-  const totalRequiredMana = 
+  const totalRequiredMana =
     cost.W + cost.U + cost.B + cost.R + cost.G + cost.C + cost.generic;
 
   // Check if player has enough total mana
@@ -120,7 +121,7 @@ export function payCost(player: IPlayer, cost: ManaCost): IPlayer {
     ...player,
     manaPool: { ...player.manaPool }
   };
-  
+
   // Deduct colored mana
   updatedPlayer.manaPool.W -= cost.W;
   updatedPlayer.manaPool.U -= cost.U;
@@ -128,22 +129,22 @@ export function payCost(player: IPlayer, cost: ManaCost): IPlayer {
   updatedPlayer.manaPool.R -= cost.R;
   updatedPlayer.manaPool.G -= cost.G;
   updatedPlayer.manaPool.C -= cost.C;
-  
+
   // Calculate remaining generic cost to pay
   let remainingGenericCost = cost.generic;
-  
+
   // First, try to pay with specific colored mana
   const coloredCost = cost.W + cost.U + cost.B + cost.R + cost.G + cost.C;
   if (coloredCost > 0) {
     // Pay the colored cost with specific colored mana (this is already handled above)
   }
-  
+
   // Pay remaining generic cost
   // First use generic mana
   const genericToUse = Math.min(updatedPlayer.manaPool.generic, remainingGenericCost);
   updatedPlayer.manaPool.generic -= genericToUse;
   remainingGenericCost -= genericToUse;
-  
+
   // Then use colored mana if needed
   if (remainingGenericCost > 0) {
     // For simplicity, we'll just reduce each color evenly
@@ -156,7 +157,7 @@ export function payCost(player: IPlayer, cost: ManaCost): IPlayer {
       remainingGenericCost -= manaToUse;
     }
   }
-  
+
   return updatedPlayer;
 }
 
@@ -169,7 +170,7 @@ function copyGameState(gameState: IGameState): IGameState {
   // Deep copy players map
   const players = new Map<string, IPlayer>();
   gameState.players.forEach((player, id) => {
-    players.set(id, { 
+    players.set(id, {
       ...player,
       manaPool: { ...player.manaPool }
     });
@@ -178,7 +179,7 @@ function copyGameState(gameState: IGameState): IGameState {
   // Deep copy zones map
   const zones = new Map<string, IZone>();
   gameState.zones.forEach((zone, id) => {
-    zones.set(id, { 
+    zones.set(id, {
       ...zone,
       cards: [...zone.cards] // Copy the cards array
     });
@@ -187,7 +188,7 @@ function copyGameState(gameState: IGameState): IGameState {
   // Deep copy card instances map
   const cardInstances = new Map<string, ICardInstance>();
   gameState.cardInstances.forEach((card, id) => {
-    cardInstances.set(id, { 
+    cardInstances.set(id, {
       ...card,
       counters: new Map(card.counters) // Copy the counters map
     });
@@ -210,63 +211,171 @@ function copyGameState(gameState: IGameState): IGameState {
 }
 
 /**
- * Checks if a player can cast a spell.
+ * Checks if a player can cast a spell, throwing descriptive errors for validation failures.
  * @param gameState The current game state
  * @param playerId The ID of the player attempting to cast the spell
  * @param cardInstanceId The ID of the card instance to cast
- * @returns True if the player can cast the spell, false otherwise
+ * @param cardDefinitions Map of card definitions for looking up mana costs
+ * @returns True if the player can cast the spell
+ * @throws GameError with specific error codes and helpful suggestions
  */
-export function canCastSpell(gameState: IGameState, playerId: string, cardInstanceId: string): boolean {
+export function canCastSpell(
+  gameState: IGameState,
+  playerId: string,
+  cardInstanceId: string,
+  cardDefinitions?: Map<string, ICardDefinition>
+): boolean {
   // Get the player
   const player = gameState.players.get(playerId);
   if (!player) {
-    return false;
+    throw new GameError(
+      ErrorCode.PlayerNotFound,
+      `Player ${playerId} not found`,
+      'This appears to be a game state issue. Try restarting the game.',
+      { playerId }
+    );
   }
 
   // Check if it's the player's turn
   if (playerId !== gameState.activePlayerId) {
-    return false;
+    const activePlayer = gameState.players.get(gameState.activePlayerId);
+    throw new GameError(
+      ErrorCode.NotYourTurn,
+      'You can only cast spells on your own turn',
+      'Wait for your turn or pass priority to continue',
+      {
+        currentPlayer: playerId,
+        activePlayer: gameState.activePlayerId,
+        activePlayerName: activePlayer?.id || 'Unknown'
+      }
+    );
   }
 
   // Check if it's a main phase
   if (gameState.phase !== Phase.PreCombatMain && gameState.phase !== Phase.PostCombatMain) {
-    return false;
+    throw new GameError(
+      ErrorCode.GamePhaseRestriction,
+      `Cannot cast spells during ${gameState.phase} phase`,
+      'Spells can only be cast during main phases',
+      {
+        currentPhase: gameState.phase,
+        allowedPhases: [Phase.PreCombatMain, Phase.PostCombatMain]
+      }
+    );
   }
 
-  // Check if the stack is empty (placeholder check for now)
-  // In a full implementation, we'd check if there are spells/abilities on the stack
-  // For now, we'll assume the stack is always empty for this action
-  
   // Check if the player has priority
   if (playerId !== gameState.priorityPlayerId) {
-    return false;
+    const priorityPlayer = gameState.players.get(gameState.priorityPlayerId);
+    throw new GameError(
+      ErrorCode.NotPriorityPlayer,
+      'You do not have priority',
+      'Wait for priority to be passed to you',
+      {
+        currentPlayer: playerId,
+        priorityPlayer: gameState.priorityPlayerId,
+        priorityPlayerName: priorityPlayer?.id || 'Unknown'
+      }
+    );
   }
 
   // Get the card instance
   const cardInstance = gameState.cardInstances.get(cardInstanceId);
   if (!cardInstance) {
-    return false;
+    throw new GameError(
+      ErrorCode.InvalidCard,
+      `Card instance ${cardInstanceId} not found`,
+      'Make sure the card exists and try again',
+      { cardInstanceId }
+    );
   }
 
   // Check if the card is in the player's hand
   const handZone = gameState.zones.get(player.handZoneId);
   if (!handZone || !handZone.cards.includes(cardInstanceId)) {
-    return false;
+    throw new GameError(
+      ErrorCode.CardNotInHand,
+      `Card "${cardInstance.definition?.name || 'Unknown'}" is not in your hand`,
+      'You can only cast spells from your hand',
+      {
+        cardName: cardInstance.definition?.name,
+        cardInstanceId,
+        handZoneId: player.handZoneId,
+        currentZone: cardInstance.currentZoneId
+      }
+    );
   }
 
-  // Get the card definition
-  // In a full implementation, we'd need to look up the definition from a card database
-  // For now, we'll assume it's available through the engine or passed in
-  
-  // Check if the card has a type that can be cast (Creature, Instant, Sorcery, etc.)
-  // This would require access to the card definition
-  // For now, we'll assume all cards in hand except lands can be cast
-  
+  // Check if the card has a type that can be cast
+  const cardDef = cardInstance.definition;
+  if (!cardDef) {
+    throw new GameError(
+      ErrorCode.InvalidCard,
+      'Card has no definition data',
+      'This appears to be a data issue. Try restarting the game.',
+      { cardInstanceId }
+    );
+  }
+
+  const castableTypes = ['Creature', 'Instant', 'Sorcery', 'Enchantment', 'Artifact', 'Planeswalker'];
+  const hasValidType = cardDef.types?.some(type => castableTypes.includes(type));
+
+  if (!hasValidType) {
+    throw new GameError(
+      ErrorCode.WrongCardType,
+      `Cannot cast ${cardDef.name || 'this card'} - it is not a castable spell`,
+      'Only creatures, instants, sorceries, enchantments, artifacts, and planeswalkers can be cast',
+      {
+        cardName: cardDef.name,
+        cardTypes: cardDef.types,
+        castableTypes
+      }
+    );
+  }
+
   // Check if the player can pay the mana cost
-  // This would require calculating the cost from the card definition
-  // For now, we'll assume the player can pay the cost
-  
-  // If all checks pass, the player can cast the spell
+  if (cardDef.manaCost) {
+    const manaCost = calculateCost(cardDef.manaCost);
+    if (!canPayCost(player, manaCost)) {
+      // Calculate what mana is missing
+      const availableMana = player.manaPool;
+      const totalAvailable = availableMana.W + availableMana.U + availableMana.B +
+        availableMana.R + availableMana.G + availableMana.C + availableMana.generic;
+      const totalRequired = manaCost.W + manaCost.U + manaCost.B +
+        manaCost.R + manaCost.G + manaCost.C + manaCost.generic;
+
+      const missingMana: string[] = [];
+      if (availableMana.W < manaCost.W) missingMana.push(`${manaCost.W - availableMana.W} White`);
+      if (availableMana.U < manaCost.U) missingMana.push(`${manaCost.U - availableMana.U} Blue`);
+      if (availableMana.B < manaCost.B) missingMana.push(`${manaCost.B - availableMana.B} Black`);
+      if (availableMana.R < manaCost.R) missingMana.push(`${manaCost.R - availableMana.R} Red`);
+      if (availableMana.G < manaCost.G) missingMana.push(`${manaCost.G - availableMana.G} Green`);
+      if (availableMana.C < manaCost.C) missingMana.push(`${manaCost.C - availableMana.C} Colorless`);
+
+      if (totalAvailable < totalRequired) {
+        missingMana.push(`${totalRequired - totalAvailable} total mana`);
+      }
+
+      throw new GameError(
+        ErrorCode.NotEnoughMana,
+        `Not enough mana to cast ${cardDef.name}`,
+        `Need ${cardDef.manaCost}. Missing: ${missingMana.join(', ')}`,
+        {
+          cardName: cardDef.name,
+          manaCost: cardDef.manaCost,
+          requiredMana: manaCost,
+          availableMana,
+          missingMana: missingMana.join(', '),
+          totalRequired,
+          totalAvailable
+        }
+      );
+    }
+  }
+
+  // TODO: Check if the stack is empty (for sorceries)
+  // For now we'll allow all spells during main phases
+
   return true;
 }
 
@@ -275,38 +384,38 @@ export function canCastSpell(gameState: IGameState, playerId: string, cardInstan
  * @param gameState The current game state
  * @param playerId The ID of the player casting the spell
  * @param cardInstanceId The ID of the card instance to cast
+ * @param cardDefinitions Optional map of card definitions for validation
  * @returns The updated game state
+ * @throws GameError if the spell cannot be cast
  */
-export function executeCastSpell(gameState: IGameState, playerId: string, cardInstanceId: string): IGameState {
-  // First, check if the player can cast the spell
-  if (!canCastSpell(gameState, playerId, cardInstanceId)) {
-    // In a full implementation, we might throw an error or return the same state
-    // For now, we'll just return the same state
-    return gameState;
-  }
+export function executeCastSpell(
+  gameState: IGameState,
+  playerId: string,
+  cardInstanceId: string,
+  cardDefinitions?: Map<string, ICardDefinition>
+): IGameState {
+  // Validate the spell can be cast (this will throw descriptive errors)
+  canCastSpell(gameState, playerId, cardInstanceId, cardDefinitions);
 
   // Create a copy of the game state to avoid mutating the original
   const newState = copyGameState(gameState);
 
-  // Get the player
-  const player = newState.players.get(playerId);
-  if (!player) {
-    return gameState;
-  }
+  // Get the player and card instance (we know they exist from validation)
+  const player = newState.players.get(playerId)!;
+  const cardInstance = newState.cardInstances.get(cardInstanceId)!;
 
-  // Get the card instance
-  const cardInstance = newState.cardInstances.get(cardInstanceId);
-  if (!cardInstance) {
-    return gameState;
+  // Pay the mana cost if the card has one
+  if (cardInstance.definition?.manaCost) {
+    const manaCost = calculateCost(cardInstance.definition.manaCost);
+    const updatedPlayer = payCost(player, manaCost);
+    newState.players.set(playerId, updatedPlayer);
   }
 
   // Remove the card from the hand zone
-  const handZone = newState.zones.get(player.handZoneId);
-  if (handZone) {
-    const index = handZone.cards.indexOf(cardInstanceId);
-    if (index !== -1) {
-      handZone.cards.splice(index, 1);
-    }
+  const handZone = newState.zones.get(player.handZoneId)!;
+  const index = handZone.cards.indexOf(cardInstanceId);
+  if (index !== -1) {
+    handZone.cards.splice(index, 1);
   }
 
   // Add the card to the stack zone
@@ -318,9 +427,8 @@ export function executeCastSpell(gameState: IGameState, playerId: string, cardIn
   // Update the card's zone
   cardInstance.currentZoneId = newState.stackZoneId;
 
-  // TODO: Pay the mana cost (this would require access to the card definition)
-
-  // TODO: Give priority to opponent
+  // TODO: Give priority to opponents for responses
+  // TODO: Handle spell resolution when stack resolves
 
   return newState;
 }

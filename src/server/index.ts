@@ -6,6 +6,7 @@ import { createServer, Server as HttpServer } from 'http';
 import { GameSessionManager } from './game_session_manager';
 import { WebSocketManager } from './websocket_manager';
 import { serializeGameState } from '../utils/serialization';
+import { GameError, ErrorCode } from '../core/errors';
 import {
     CreateGameRequest,
     CreateGameResponse,
@@ -326,12 +327,30 @@ export class Server {
                 console.log(`Action submitted for game ${gameId}: ${action.type} by ${playerId}`);
                 res.json(response);
             } catch (actionError) {
-                // If the action failed, return the previous state with an error
-                const errorMessage = actionError instanceof Error ? actionError.message : 'Unknown action error';
+                // Handle different types of errors appropriately
+                let errorMessage: string;
+                let errorCode: string | undefined;
+                let errorContext: Record<string, any> | undefined;
+                let suggestion: string | undefined;
+
+                if (actionError instanceof GameError) {
+                    errorMessage = actionError.message;
+                    errorCode = actionError.code;
+                    errorContext = actionError.context;
+                    suggestion = actionError.suggestion;
+                } else if (actionError instanceof Error) {
+                    errorMessage = actionError.message;
+                } else {
+                    errorMessage = 'Unknown action error';
+                }
+
                 const response: SubmitActionResponse = {
-                    gameState: previousState,
+                    gameState: serializeGameState(previousState),
                     success: false,
-                    error: errorMessage
+                    error: errorMessage,
+                    errorCode,
+                    suggestion,
+                    context: errorContext
                 };
 
                 // Broadcast the failed action result to WebSocket clients
@@ -339,11 +358,35 @@ export class Server {
                     success: false,
                     gameState: previousState,
                     error: errorMessage,
+                    errorCode,
+                    suggestion,
+                    context: errorContext,
                     action,
                     playerId
                 });
 
-                res.status(400).json(response);
+                // Use appropriate HTTP status codes based on error type
+                let statusCode = 400;
+                if (actionError instanceof GameError) {
+                    switch (actionError.code) {
+                        case ErrorCode.PlayerNotFound:
+                        case ErrorCode.GameNotFound:
+                        case ErrorCode.InvalidCard:
+                            statusCode = 404;
+                            break;
+                        case ErrorCode.NotYourTurn:
+                        case ErrorCode.NotPriorityPlayer:
+                        case ErrorCode.ActionNotAllowed:
+                        case ErrorCode.GamePhaseRestriction:
+                        case ErrorCode.NotEnoughMana:
+                            statusCode = 422; // Unprocessable Entity
+                            break;
+                        default:
+                            statusCode = 400;
+                    }
+                }
+
+                res.status(statusCode).json(response);
             }
         } catch (error) {
             next(error);

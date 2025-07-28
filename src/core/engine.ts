@@ -5,6 +5,7 @@ import { CardInstance } from './game_state/card_instance';
 import { TurnManager } from './rules/turn_manager';
 import { PriorityManager } from './rules/priority_manager';
 import { canPlayLand, executePlayLand } from './actions/play_land';
+import { canCastSpell, executeCastSpell } from './actions/cast_spell';
 import { EventBus } from './events/event_bus';
 import { AbilityRegistry, initializeAbilityRegistry } from './abilities/registry';
 import { GameEvent } from './events/event_types';
@@ -273,8 +274,13 @@ export class Engine {
         break;
 
       case 'CAST_SPELL':
-        // Cast a spell (to be implemented when needed)
-        // For now, this is a placeholder for future spell casting implementation
+        try {
+          const newState = executeCastSpell(this.gameState, playerId, action.cardId, this.cardDefinitions);
+          this.gameState = newState;
+        } catch (error) {
+          // Re-throw the error to be handled by the caller (e.g., server, CLI)
+          throw error;
+        }
         break;
     }
 
