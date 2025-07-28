@@ -6,6 +6,8 @@ import { IGameState, ICardDefinition, IPlayer, IZone, ICardInstance, Action } fr
 import { Phase, Step } from '../core/rules/turn_manager';
 import { GameStateDisplay } from './game_state_display';
 import { CommandHandler } from './command_handler';
+import { ErrorReporter } from './error_reporter';
+import { GameError, ErrorCode } from '../core/errors';
 import { allScenarios, getScenario, Scenario } from './scenarios/scenarios';
 import { deserializeGameState } from '../utils/serialization';
 
@@ -69,14 +71,29 @@ export class CLI {
                     if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
                         resolve(JSON.parse(data));
                     } else {
-                        const errorResponse = JSON.parse(data);
-                        reject(new Error(errorResponse.error || `Request failed with status code ${res.statusCode}`));
+                        try {
+                            const errorResponse = JSON.parse(data);
+                            const serverError = GameError.fromNetworkError(
+                                new Error(errorResponse.error || `Request failed with status code ${res.statusCode}`),
+                                'Check the server logs or try restarting the server'
+                            );
+                            reject(serverError);
+                        } catch (parseError) {
+                            const networkError = GameError.fromNetworkError(
+                                new Error(`Request failed with status code ${res.statusCode}`)
+                            );
+                            reject(networkError);
+                        }
                     }
                 });
             });
 
             req.on('error', (error) => {
-                reject(error);
+                const networkError = GameError.fromNetworkError(
+                    error,
+                    'Make sure the server is running and accessible'
+                );
+                reject(networkError);
             });
 
             if (body) {
@@ -120,7 +137,7 @@ export class CLI {
             this.gameState = deserializeGameState(response.gameState);
             console.log(`Started new game with ID: ${this.gameId}`);
         } catch (error) {
-            console.error('Failed to start new game:', (error as Error).message);
+            ErrorReporter.displayError(error as Error, this.gameState || undefined);
         }
     }
 
@@ -212,6 +229,10 @@ export class CLI {
         switch (command) {
             case 'help':
                 this.showHelp();
+                // Show contextual help if we have a game state
+                if (this.gameState) {
+                    ErrorReporter.showContextualHelp(this.gameState);
+                }
                 break;
 
             case 'state':
@@ -274,7 +295,21 @@ export class CLI {
                 break;
 
             default:
-                console.log(`Unknown command: ${command}. Type "help" for available commands.`);
+                const error = new GameError(
+                    ErrorCode.CommandNotFound,
+                    `Unknown command: ${command}`,
+                    'Type "help" for available commands',
+                    { 
+                        command,
+                        availableCommands: ['help', 'state', 'new-game', 'scenario', 'play', 'cast', 'activate', 'pass', 'advance', 'clear', 'history']
+                    }
+                );
+                ErrorReporter.displayError(error, this.gameState || undefined);
+                
+                // Show contextual help if we have a game state
+                if (this.gameState) {
+                    ErrorReporter.showContextualHelp(this.gameState);
+                }
         }
     }
 
@@ -296,7 +331,7 @@ export class CLI {
                 }
             }
         } catch (error) {
-            console.error('Failed to execute action:', (error as Error).message);
+            ErrorReporter.displayError(error as Error, this.gameState || undefined);
         }
     }
 
@@ -330,7 +365,7 @@ export class CLI {
                 this.display.showGameState(this.gameState);
             }
         } catch (error) {
-            console.error('Failed to execute automation command:', (error as Error).message);
+            ErrorReporter.displayError(error as Error, this.gameState || undefined);
         }
     }
 
@@ -368,30 +403,35 @@ export class CLI {
     }
 
     private showHelp(): void {
-        console.log('Available commands:');
+        console.log('📖 Available commands:');
         console.log();
-        console.log('Game Management:');
+        console.log('🎮 Game Management:');
         console.log('  new-game [deck1] [deck2]  - Start a new game with specified decks (default: basics)');
         console.log('  scenario [name]           - Load a predefined scenario or list available scenarios');
         console.log();
-        console.log('Game State:');
+        console.log('📊 Game State:');
         console.log('  state, show               - Display the current game state');
         console.log('  clear                     - Clear the screen');
         console.log();
-        console.log('Game Actions:');
-        console.log('  play <card>               - Play a land from hand');
-        console.log('  cast <card> [targets...]  - Cast a spell');
-        console.log('  activate <card> <ability> - Activate an ability');
+        console.log('🎯 Game Actions (card references can be numbers or names):');
+        console.log('  play <card>               - Play a land from hand (e.g., "play 1" or "play Plains")');
+        console.log('  cast <card> [targets...]  - Cast a spell (e.g., "cast 2" or "cast Lightning Bolt")');
+        console.log('  activate <card> <ability> - Activate an ability (e.g., "activate 1 1")');
         console.log('  pass                      - Pass priority');
         console.log('  advance                   - Advance to next turn/phase');
         console.log();
-        console.log('Automation Commands:');
+        console.log('⚡ Automation Commands:');
         console.log('  next-turn                 - Automatically advance to the next turn');
         console.log();
-        console.log('Utility:');
+        console.log('🔧 Utility:');
         console.log('  history                   - Show command history');
         console.log('  help                      - Show this help message');
         console.log('  quit, exit                - Exit the CLI');
+        console.log();
+        console.log('💡 Tips:');
+        console.log('  • Cards can be referenced by number (1, 2, 3...) or partial name');
+        console.log('  • Error messages will show available options when commands fail');
+        console.log('  • Use "state" frequently to check the current game situation');
         console.log();
     }
 

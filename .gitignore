@@ -40,3 +40,6 @@ Thumbs.db
 
 # Optional npm cache directory
 .npm
+
+# CLI specific files
+.mtg-cli-history

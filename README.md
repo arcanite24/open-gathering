@@ -165,3 +165,217 @@ To add a new card to the engine:
 ├── tests/            # Unit and integration tests
 └── package.json      # Project dependencies and scripts
 ```
+
+## Error Handling & User Guidance
+
+The Open Gathering engine provides comprehensive error handling with user-friendly messages and helpful suggestions. The error system is designed to help users understand what went wrong and how to fix it.
+
+### Error Architecture
+
+The error system consists of several components:
+
+- **ErrorCode Enum**: Categorizes different types of errors for programmatic handling
+- **GameError Class**: Enhanced error class with contextual information and suggestions
+- **ErrorReporter**: CLI-specific error display with game state context
+- **Network Error Handling**: Automatic conversion of API/network errors to user-friendly messages
+
+### Error Types
+
+The engine categorizes errors into several types:
+
+#### General Errors
+- `UNKNOWN_ERROR`: Catch-all for unexpected errors
+- `COMMAND_NOT_FOUND`: CLI command doesn't exist
+- `INVALID_COMMAND`: Command syntax is incorrect
+
+#### Card-related Errors
+- `CARD_NOT_FOUND`: Card doesn't exist in the specified location
+- `CARD_NOT_IN_HAND`: Trying to play a card that's not in hand
+- `CARD_NOT_ON_BATTLEFIELD`: Trying to activate abilities on cards not in play
+- `INVALID_CARD`: Card reference is invalid (wrong number, etc.)
+
+#### Game State Errors
+- `NOT_ENOUGH_MANA`: Insufficient mana to cast a spell
+- `NOT_YOUR_TURN`: Trying to take actions when it's not your turn
+- `ACTION_NOT_ALLOWED`: Action violates game rules
+- `GAME_PHASE_RESTRICTION`: Action not allowed in current phase
+
+#### CLI-specific Errors
+- `INVALID_ARGUMENTS`: Command arguments are invalid
+- `INSUFFICIENT_ARGUMENTS`: Not enough arguments provided
+- `AMBIGUOUS_COMMAND`: Multiple cards match the provided name
+
+### Using the Error System
+
+#### In CLI Applications
+
+```typescript
+import { GameError, ErrorCode } from './src/core/errors';
+import { ErrorReporter } from './src/cli/error_reporter';
+
+try {
+    // Game action that might fail
+    engine.castSpell(playerId, cardId);
+} catch (error) {
+    // Display user-friendly error with context
+    ErrorReporter.displayError(error, gameState);
+}
+```
+
+#### Creating Custom Errors
+
+```typescript
+// Simple error with suggestion
+throw new GameError(
+    ErrorCode.CARD_NOT_IN_HAND,
+    'Card "Lightning Bolt" not found in hand',
+    'Use card numbers (1, 2, 3...) or check the exact spelling'
+);
+
+// Error with additional context
+throw new GameError(
+    ErrorCode.INSUFFICIENT_ARGUMENTS,
+    'Missing card identifier for cast command',
+    'Specify which card to cast using its number or name',
+    {
+        usage: 'cast <card_identifier> [targets...]',
+        example: 'cast 2  or  cast Lightning Bolt player1',
+        handSize: 5
+    }
+);
+```
+
+#### Handling Network Errors
+
+```typescript
+// Automatic conversion of API errors
+try {
+    const response = await apiRequest('POST', '/games');
+} catch (error) {
+    // Automatically converted to GameError with helpful suggestions
+    const gameError = GameError.fromNetworkError(
+        error,
+        'Make sure the server is running on port 3000'
+    );
+    ErrorReporter.displayError(gameError);
+}
+```
+
+### Error Display Features
+
+The error reporter provides several helpful features:
+
+#### Contextual Information
+Errors automatically show relevant game state information:
+- Cards in hand when card lookup fails
+- Available abilities when activation fails
+- Current turn and phase information
+- Valid command suggestions
+
+#### Smart Suggestions
+The system provides intelligent suggestions based on the error:
+- Shows available cards when card not found
+- Suggests correct command syntax
+- Provides examples of proper usage
+- Shows contextual help for current game state
+
+#### Visual Formatting
+Errors are displayed with clear visual formatting:
+- ❌ Error indicators
+- 💡 Suggestion highlights  
+- 📋 Context sections with relevant information
+- 🎯 Game status indicators
+
+### Example Error Messages
+
+#### Card Not Found Error
+```
+❌ Error:
+No card matching "bolt" found in hand
+💡 Suggestion: Use the card number or check the exact spelling
+📝 Context:
+  - searchTerm: bolt
+  - handSize: 3
+  - availableCards: 
+    - 1. Plains
+    - 2. Lightning Bolt
+    - 3. Mountain
+
+📋 Cards in your hand:
+  1. Plains
+  2. Lightning Bolt  
+  3. Mountain
+```
+
+#### Network Connection Error
+```
+❌ Error:
+Cannot connect to game server
+💡 Suggestion: Make sure the server is running on the correct port (default: 3000)
+📝 Context:
+  - originalError: connect ECONNREFUSED 127.0.0.1:3000
+```
+
+#### Insufficient Arguments Error
+```
+❌ Error:
+Missing arguments for activate command
+💡 Suggestion: Specify both the card and ability to activate
+📝 Context:
+  - usage: activate <card_identifier> <ability_identifier> [targets...]
+  - example: activate 1 1  or  activate "Llanowar Elves" 1
+
+⚔️ Cards on your battlefield:
+  1. Llanowar Elves
+  2. Forest
+
+💡 Quick Help:
+  • To activate an ability: "activate <card number> <ability number>"
+  • To see game state: "state"
+  • For all commands: "help"
+```
+
+### Best Practices for Error Handling
+
+#### For Engine Developers
+1. **Use Specific Error Codes**: Choose the most specific error code available
+2. **Provide Context**: Include relevant game state information in error context
+3. **Write Clear Messages**: Error messages should be user-friendly, not technical
+4. **Suggest Solutions**: Always provide actionable suggestions when possible
+
+#### For CLI Users
+1. **Read Error Messages Carefully**: They contain helpful context and suggestions
+2. **Use the Help System**: Type "help" for general guidance, errors show contextual help
+3. **Check Game State**: Use "state" command to understand current situation
+4. **Use Card Numbers**: More reliable than partial name matching
+
+#### For API Consumers
+1. **Handle GameError Types**: Check error codes for programmatic responses
+2. **Parse Error Context**: Use context information for detailed error handling
+3. **Implement Retry Logic**: For network errors with appropriate backoff
+4. **Show User-Friendly Messages**: Convert technical errors to user-understandable text
+
+### Testing Error Scenarios
+
+The error system includes comprehensive tests for various scenarios:
+
+```typescript
+// Test specific error types
+it('should throw CARD_NOT_IN_HAND error when card not found', () => {
+    expect(() => {
+        commandHandler.parsePlayAction(['nonexistent'], player, gameState);
+    }).toThrow(GameError);
+});
+
+// Test error context
+it('should include available cards in error context', () => {
+    try {
+        commandHandler.parsePlayAction(['invalid'], player, gameState);
+    } catch (error) {
+        expect(error.context.availableCards).toBeDefined();
+        expect(error.suggestion).toContain('card number');
+    }
+});
+```
+
+This comprehensive error handling system ensures that users receive clear, actionable feedback when things go wrong, making the CLI much more user-friendly and reducing frustration during gameplay.

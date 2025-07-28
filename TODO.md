@@ -1,0 +1,2 @@
+- [ ] Load predefined decks from .json files
+- [ ] Add better error traceability for action in the CLI
