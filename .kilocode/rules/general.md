@@ -15,9 +15,11 @@ When helping with implementation tasks, please:
 3. Write clear, testable code
 4. Add unit tests for new functionality
 5. Adhere to the implementation plan's task breakdown
+6. For card implementation tasks, follow the guidelines in docs/card_implementation_framework.md
+7. For set implementation planning, consult docs/set_implementation_systematic_approach.md
+8. For testing strategies, refer to docs/enhanced_testing_coverage.md
 
 ## Extra instructions
-- Whenever you complete a task, update the relevant section in the README and IMPLEMENTATION_PLAN.md
 - Always run tests after making changes to ensure nothing is broken
 - Always check for linting and compile errors.
 - Use enums and interfaces to define clear contracts for your code, avoid at all costs using magic strings or numbers

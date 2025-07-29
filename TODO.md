@@ -4,4 +4,4 @@
 - [ ] Add shuffle
 - [ ] Confirm we're drawing cards on the correct step
 - [ ] Create a robust testing strategy when adding cards and sets
-- [ ] Add shortcuts commands to the CLI
+- [x] Add shortcuts commands to the CLI
