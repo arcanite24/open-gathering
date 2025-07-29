@@ -1,15 +1,15 @@
-import { IGameState, IPlayer, IZone, ICardInstance, ICardDefinition } from './game_state/interfaces';
+import { IGameState, IZone, ICardInstance, ICardDefinition } from './game_state/interfaces';
 import { Player } from './game_state/player';
 import { Zone } from './game_state/zone';
 import { CardInstance } from './game_state/card_instance';
 import { TurnManager } from './rules/turn_manager';
 import { PriorityManager } from './rules/priority_manager';
 import { canPlayLand, executePlayLand } from './actions/play_land';
-import { canCastSpell, executeCastSpell } from './actions/cast_spell';
+import { executeCastSpell } from './actions/cast_spell';
 import { EventBus } from './events/event_bus';
 import { AbilityRegistry, initializeAbilityRegistry } from './abilities/registry';
 import { GameEvent } from './events/event_types';
-import { ITriggeredAbility, IActivatedAbility, IStaticAbility, Target } from './abilities/interfaces';
+import { Target } from './abilities/interfaces';
 import { SBAChecker } from './rules/sba_checker';
 import { ContinuousEffectProcessor } from './rules/continuous_effect_processor';
 import { activateAbility } from './actions/advanced_actions';

@@ -123,10 +123,11 @@ The CLI is a powerful tool for development and testing. It connects to the runni
 
 To speed up testing, the CLI includes commands to automate game progression:
 
--   `next-turn`: Automatically advances to the next turn using the ADVANCE_STEP action.
--   `to-main`: Advances to the next main phase.
--   `to-combat`: Advances to the combat phase.
--   `to-end`: Advances to the end step.
+-   `next-turn` or `nt`: Automatically advances to the next turn using the ADVANCE_STEP action.
+-   `to-main` or `main`: Advances to the next main phase.
+-   `to-combat` or `combat`: Advances to the combat phase.
+-   `to-end` or `end`: Advances to the end step.
+-   `to-cleanup` or `cleanup`: Advances to the cleanup step.
 
 ### Adding a New Card
 

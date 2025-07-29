@@ -2,14 +2,14 @@ import * as readline from 'readline';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as http from 'http';
-import { IGameState, ICardDefinition, IPlayer, IZone, ICardInstance, Action } from '../core/game_state/interfaces';
-import { Phase, Step } from '../core/rules/turn_manager';
+import { IGameState, ICardDefinition } from '../core/game_state/interfaces';
 import { GameStateDisplay } from './game_state_display';
 import { CommandHandler } from './command_handler';
 import { ErrorReporter } from './error_reporter';
 import { GameError, ErrorCode } from '../core/errors';
-import { allScenarios, getScenario, Scenario } from './scenarios/scenarios';
+import { allScenarios, getScenario } from './scenarios/scenarios';
 import { deserializeGameState } from '../utils/serialization';
+import { Phase, Step } from '../core/rules/turn_manager';
 
 export interface CLIOptions {
     enableHistory?: boolean;
@@ -123,7 +123,7 @@ export class CLI {
         await this.commandLoop();
     }
 
-    async newGame(player1DeckName: string = 'basics', player2DeckName: string = 'basics'): Promise<void> {
+    async newGame(player1DeckName: string = 'sample_deck_1', player2DeckName: string = 'sample_deck_2'): Promise<void> {
         try {
             const player1Deck = await this.loadDeck(player1DeckName);
             const player2Deck = await this.loadDeck(player2DeckName);
@@ -222,9 +222,11 @@ export class CLI {
     }
 
     private async handleCommand(input: string): Promise<void> {
+        console.log(`Handling command: "${input}"`);
         const parts = input.split(' ');
         const command = parts[0].toLowerCase();
         const args = parts.slice(1);
+        console.log(`Parsed command: "${command}", args: [${args.join(', ')}]`);
 
         switch (command) {
             case 'help':
@@ -275,10 +277,15 @@ export class CLI {
                 break;
 
             case 'next-turn':
+            case 'nt':
             case 'to-main':
+            case 'main':
             case 'to-combat':
+            case 'combat':
             case 'to-end':
+            case 'end':
             case 'to-cleanup':
+            case 'cleanup':
                 if (!this.gameId) {
                     console.log('No game started. Use "new-game" to start a new game.');
                     break;
@@ -347,6 +354,7 @@ export class CLI {
 
             switch (command) {
                 case 'next-turn':
+                case 'nt':
                     console.log(`Advancing from turn ${initialTurn} to next turn...`);
                     while (this.gameState && this.gameState.turn === initialTurn && actionCount < maxActions) {
                         await this.advanceOneStep();
@@ -361,7 +369,82 @@ export class CLI {
                         console.log(`Advanced to turn ${this.gameState.turn} after ${actionCount} actions`);
                     }
                     break;
-                // Other automation commands can be implemented here
+
+                case 'to-main':
+                case 'main':
+                    console.log(`Advancing to main phase...`);
+                    console.log(`Current phase: ${this.gameState?.phase}, step: ${this.gameState?.step}`);
+                    while (this.gameState &&
+                        !(this.gameState.phase === Phase.PreCombatMain || this.gameState.phase === Phase.PostCombatMain) &&
+                        actionCount < maxActions) {
+                        console.log(`Loop iteration ${actionCount}: phase=${this.gameState.phase}, step=${this.gameState.step}`);
+                        await this.advanceOneStep();
+                        actionCount++;
+                    }
+                    if (actionCount >= maxActions) {
+                        console.log('Warning: Hit maximum action limit, stopping automation');
+                    } else if (this.gameState) {
+                        console.log(`Advanced to main phase after ${actionCount} actions`);
+                    }
+                    break;
+
+                case 'to-combat':
+                case 'combat':
+                    console.log(`Advancing to combat phase...`);
+                    console.log(`Current phase: ${this.gameState?.phase}, step: ${this.gameState?.step}`);
+                    while (this.gameState &&
+                        !(this.gameState.phase === Phase.Combat) &&
+                        actionCount < maxActions) {
+                        console.log(`Loop iteration ${actionCount}: phase=${this.gameState.phase}, step=${this.gameState.step}`);
+                        await this.advanceOneStep();
+                        actionCount++;
+                    }
+                    if (actionCount >= maxActions) {
+                        console.log('Warning: Hit maximum action limit, stopping automation');
+                    } else if (this.gameState) {
+                        console.log(`Advanced to combat phase after ${actionCount} actions`);
+                    }
+                    break;
+
+                case 'to-end':
+                case 'end':
+                    console.log(`Advancing to end step...`);
+                    console.log(`Current phase: ${this.gameState?.phase}, step: ${this.gameState?.step}`);
+                    while (this.gameState &&
+                        !(this.gameState.phase === Phase.Ending && this.gameState.step === Step.EndStep) &&
+                        actionCount < maxActions) {
+                        console.log(`Loop iteration ${actionCount}: phase=${this.gameState.phase}, step=${this.gameState.step}`);
+                        await this.advanceOneStep();
+                        actionCount++;
+                    }
+                    if (actionCount >= maxActions) {
+                        console.log('Warning: Hit maximum action limit, stopping automation');
+                    } else if (this.gameState) {
+                        console.log(`Advanced to end step after ${actionCount} actions`);
+                    }
+                    break;
+
+                case 'to-cleanup':
+                case 'cleanup':
+                    console.log(`Advancing to cleanup step...`);
+                    console.log(`Current phase: ${this.gameState?.phase}, step: ${this.gameState?.step}`);
+                    while (this.gameState &&
+                        !(this.gameState.phase === Phase.Ending && this.gameState.step === Step.Cleanup) &&
+                        actionCount < maxActions) {
+                        console.log(`Loop iteration ${actionCount}: phase=${this.gameState.phase}, step=${this.gameState.step}`);
+                        await this.advanceOneStep();
+                        actionCount++;
+                    }
+                    if (actionCount >= maxActions) {
+                        console.log('Warning: Hit maximum action limit, stopping automation');
+                    } else if (this.gameState) {
+                        console.log(`Advanced to cleanup step after ${actionCount} actions`);
+                    }
+                    break;
+
+                default:
+                    console.log(`Unknown automation command: ${command}`);
+                    console.log('Available automation commands: next-turn, to-main, to-combat, to-end, to-cleanup');
             }
 
             if (this.gameState) {
@@ -414,7 +497,11 @@ export class CLI {
         console.log('  advance                   - Advance to next turn/phase');
         console.log();
         console.log('⚡ Automation Commands:');
-        console.log('  next-turn                 - Automatically advance to the next turn');
+        console.log('  next-turn, nt             - Automatically advance to the next turn');
+        console.log('  to-main, main             - Advance to the main phase');
+        console.log('  to-combat, combat         - Advance to the combat phase');
+        console.log('  to-end, end               - Advance to the end step');
+        console.log('  to-cleanup, cleanup       - Advance to the cleanup step');
         console.log();
         console.log('🔧 Utility:');
         console.log('  history                   - Show command history');
@@ -425,6 +512,7 @@ export class CLI {
         console.log('  • Cards can be referenced by number (1, 2, 3...) or partial name');
         console.log('  • Error messages will show available options when commands fail');
         console.log('  • Use "state" frequently to check the current game situation');
+        console.log('  • Use automation commands like "main", "combat", "end" to quickly navigate phases');
         console.log();
     }
 
@@ -497,7 +585,9 @@ export class CLI {
     private completer(line: string): [string[], string] {
         const commands = [
             'help', 'new-game', 'scenario', 'state', 'show', 'play', 'cast',
-            'activate', 'pass', 'advance', 'next-turn', 'clear', 'history', 'quit', 'exit'
+            'activate', 'pass', 'advance', 'next-turn', 'nt', 'to-main', 'main',
+            'to-combat', 'combat', 'to-end', 'end', 'to-cleanup', 'cleanup',
+            'clear', 'history', 'quit', 'exit'
         ];
 
         const hits = commands.filter(cmd => cmd.startsWith(line));

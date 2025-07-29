@@ -1,1 +1,25 @@
-{"id": "sample_deck_1", "name": "Sample Deck 1", "description": "A sample deck for testing purposes", "format": "standard", "author": "Open Gathering Team", "cardIds": ["basic_forest", "basic_forest", "basic_forest", "basic_forest", "basic_forest", "basic_forest", "basic_forest", "basic_forest", "grizzly_bears", "grizzly_bears", "grizzly_bears", "grizzly_bears", "lightning_bolt", "lightning_bolt", "lightning_bolt", "lightning_bolt"]}
+{
+    "id": "sample_deck_1",
+    "name": "Sample Deck 1",
+    "description": "A sample deck for testing purposes",
+    "format": "standard",
+    "author": "Open Gathering Team",
+    "cardIds": [
+        "basic_forest",
+        "basic_forest",
+        "basic_forest",
+        "basic_forest",
+        "basic_forest",
+        "basic_forest",
+        "basic_forest",
+        "basic_forest",
+        "grizzly_bears",
+        "grizzly_bears",
+        "grizzly_bears",
+        "grizzly_bears",
+        "lightning_bolt",
+        "lightning_bolt",
+        "lightning_bolt",
+        "lightning_bolt"
+    ]
+}
