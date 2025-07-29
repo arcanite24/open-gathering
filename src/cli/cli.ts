@@ -343,7 +343,7 @@ export class CLI {
             const initialTurn = initialState.turn;
 
             let actionCount = 0;
-            const maxActions = 100;
+            const maxActions = 500;
 
             switch (command) {
                 case 'next-turn':
@@ -354,8 +354,11 @@ export class CLI {
                     }
                     if (actionCount >= maxActions) {
                         console.log('Warning: Hit maximum action limit, stopping automation');
+                        console.log(`Actions executed: ${actionCount}`);
+                        console.log(`Current turn: ${this.gameState?.turn}, initial turn: ${initialTurn}`);
+                        console.log(`Current phase: ${this.gameState?.phase}, step: ${this.gameState?.step}`);
                     } else if (this.gameState) {
-                        console.log(`Advanced to turn ${this.gameState.turn}`);
+                        console.log(`Advanced to turn ${this.gameState.turn} after ${actionCount} actions`);
                     }
                     break;
                 // Other automation commands can be implemented here
@@ -375,26 +378,15 @@ export class CLI {
         const initialState = this.gameState;
 
         try {
-            // Handle both Map and plain object cases for players
-            const playerIds = initialState.players instanceof Map
-                ? Array.from(initialState.players.keys())
-                : Object.keys(initialState.players);
-
-            for (const playerId of playerIds) {
-                if (this.gameState && this.gameState.priorityPlayerId === playerId) {
-                    const response = await this.apiRequest('POST', `/games/${this.gameId}/actions`, {
-                        playerId,
-                        action: { type: 'PASS_PRIORITY' }
-                    });
-                    this.gameState = deserializeGameState(response.gameState);
-                }
-            }
-
+            // Use the new ADVANCE_STEP action which handles both priority passing and turn advancement
             const response = await this.apiRequest('POST', `/games/${this.gameId}/actions`, {
                 playerId: initialState.activePlayerId,
-                action: { type: 'ADVANCE_TURN' }
+                action: { type: 'ADVANCE_STEP' }
             });
             this.gameState = deserializeGameState(response.gameState);
+
+            // Add detailed logging for debugging
+            console.log(`ADVANCE_STEP result - Turn: ${this.gameState?.turn}, Phase: ${this.gameState?.phase}, Step: ${this.gameState?.step}, Priority: ${this.gameState?.priorityPlayerId}, Active: ${this.gameState?.activePlayerId}`);
 
             return this.gameState !== null && (this.gameState.turn !== initialState.turn || this.gameState.step !== initialState.step);
         } catch (error) {

@@ -94,7 +94,7 @@ export const validateSubmitAction: ValidationChain[] = [
         .isObject()
         .withMessage('action must be an object'),
     body('action.type')
-        .isIn(['PLAY_LAND', 'PASS_PRIORITY', 'ADVANCE_TURN', 'ACTIVATE_ABILITY', 'CAST_SPELL'])
+        .isIn(['PLAY_LAND', 'PASS_PRIORITY', 'ADVANCE_TURN', 'ADVANCE_STEP', 'ACTIVATE_ABILITY', 'CAST_SPELL'])
         .withMessage('action.type must be a valid action type'),
     body('action.cardId')
         .optional()

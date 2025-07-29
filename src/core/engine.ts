@@ -19,6 +19,7 @@ export type Action =
   | { type: 'PLAY_LAND', cardId: string }
   | { type: 'PASS_PRIORITY' }
   | { type: 'ADVANCE_TURN' }
+  | { type: 'ADVANCE_STEP' }
   | { type: 'ACTIVATE_ABILITY', cardId: string, abilityId: string, targets?: Target[] }
   | { type: 'CAST_SPELL', cardId: string, targets?: Target[] };
 
@@ -253,6 +254,15 @@ export class Engine {
 
       case 'ADVANCE_TURN':
         // Advance to the next turn/phase/step
+        this.gameState = this.turnManager.advance(this.gameState);
+        // Set priority to the active player at the start of the new step
+        this.gameState = this.priorityManager.setActivePlayerPriority(this.gameState);
+        break;
+
+      case 'ADVANCE_STEP':
+        // Pass priority first
+        this.gameState = this.priorityManager.passPriority(this.gameState);
+        // Then advance the turn
         this.gameState = this.turnManager.advance(this.gameState);
         // Set priority to the active player at the start of the new step
         this.gameState = this.priorityManager.setActivePlayerPriority(this.gameState);
