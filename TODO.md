@@ -1,2 +1,3 @@
-- [ ] Load predefined decks from .json files
+- [x] Load predefined decks from .json files
 - [ ] Add better error traceability for action in the CLI
+- [ ] next-turn doesn't work after the first time running it

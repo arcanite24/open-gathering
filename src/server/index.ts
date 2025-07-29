@@ -102,9 +102,6 @@ export class Server {
         // Request logging middleware
         this.app.use(requestLogger);
 
-        // Rate limiting
-        this.app.use(apiRateLimit);
-
         // CORS middleware
         this.app.use(cors({
             origin: process.env.NODE_ENV === 'production'

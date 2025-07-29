@@ -2,6 +2,8 @@ import { Engine } from '../core/engine';
 import { ICardDefinition } from '../core/game_state/interfaces';
 import { loadCardDefinitions, CardValidationError } from '../utils/card_loader';
 import * as path from 'path';
+import { IDeckDefinition } from '../interfaces/server/deck_definition';
+import * as fs from 'fs';
 
 /**
  * Represents an active game session.
@@ -32,9 +34,11 @@ export interface SessionStats {
 export class GameSessionManager {
     private sessions: Map<string, GameSession> = new Map();
     private cardDefinitions: Map<string, ICardDefinition> = new Map();
+    private deckDefinitions: Map<string, IDeckDefinition> = new Map();
 
     constructor(dataDirectory?: string) {
         this.loadCardDefinitions(dataDirectory);
+        this.deckDefinitions = this.loadDeckDefinitions(dataDirectory ? path.join(dataDirectory, 'decks') : undefined);
     }
 
     /**
@@ -59,22 +63,99 @@ export class GameSessionManager {
     }
 
     /**
+     * Load deck definitions from JSON files in the decks directory
+     * @param decksDirectory Optional path to the decks directory. Defaults to project root data/decks directory.
+     * @returns Map of deck definitions
+     */
+    private loadDeckDefinitions(decksDirectory?: string): Map<string, IDeckDefinition> {
+        const defaultDecksDir = path.join(__dirname, '..', '..', 'data', 'decks');
+        const decksDir = decksDirectory || defaultDecksDir;
+        const deckDefinitions = new Map<string, IDeckDefinition>();
+
+        try {
+            if (!fs.existsSync(decksDir)) {
+                console.log(`Decks directory not found at ${decksDir}, creating it.`);
+                fs.mkdirSync(decksDir, { recursive: true });
+                return deckDefinitions;
+            }
+
+            const files = fs.readdirSync(decksDir);
+            for (const file of files) {
+                if (file.endsWith('.json')) {
+                    try {
+                        const filePath = path.join(decksDir, file);
+                        const fileContent = fs.readFileSync(filePath, 'utf-8');
+                        const deckDefinition: IDeckDefinition = JSON.parse(fileContent);
+
+                        // Validate required fields
+                        if (!deckDefinition.id || !deckDefinition.name || !deckDefinition.cardIds) {
+                            console.warn(`Invalid deck definition in ${file}: missing required fields`);
+                            continue;
+                        }
+
+                        deckDefinitions.set(deckDefinition.id, deckDefinition);
+                    } catch (error) {
+                        console.warn(`Failed to load deck definition from ${file}: ${error}`);
+                    }
+                }
+            }
+
+            console.log(`Loaded ${deckDefinitions.size} deck definitions from ${decksDir}`);
+        } catch (error) {
+            console.error(`Failed to load deck definitions: ${error}`);
+        }
+
+        return deckDefinitions;
+    }
+
+    /**
      * Creates a new game session.
-     * @param player1Deck Array of card definition IDs for player 1's deck
-     * @param player2Deck Array of card definition IDs for player 2's deck
+     * @param player1Deck Array of card definition IDs for player 1's deck or a deck ID
+     * @param player2Deck Array of card definition IDs for player 2's deck or a deck ID
      * @returns The created game session
      */
-    createGame(player1Deck: string[], player2Deck: string[]): GameSession {
+    createGame(player1Deck: string[] | string, player2Deck: string[] | string): GameSession {
         const gameId = this.generateGameId();
         const engine = new Engine();
 
-        // Convert card IDs to card definitions
-        const player1Cards = player1Deck.map(id => this.cardDefinitions.get(id)).filter(Boolean) as ICardDefinition[];
-        const player2Cards = player2Deck.map(id => this.cardDefinitions.get(id)).filter(Boolean) as ICardDefinition[];
+        // Resolve player 1's cards
+        let player1Cards: ICardDefinition[];
+        if (typeof player1Deck === 'string') {
+            // It's a deck ID
+            const deck = this.deckDefinitions.get(player1Deck);
+            if (!deck) {
+                throw new Error(`Deck with ID '${player1Deck}' not found`);
+            }
+            player1Cards = deck.cardIds.map(id => this.cardDefinitions.get(id)).filter(Boolean) as ICardDefinition[];
+            if (player1Cards.length !== deck.cardIds.length) {
+                throw new Error('Invalid card IDs in deck');
+            }
+        } else {
+            // It's an array of card IDs
+            player1Cards = player1Deck.map(id => this.cardDefinitions.get(id)).filter(Boolean) as ICardDefinition[];
+            if (player1Cards.length !== player1Deck.length) {
+                throw new Error('Invalid card IDs in deck');
+            }
+        }
 
-        // Validate decks
-        if (player1Cards.length !== player1Deck.length || player2Cards.length !== player2Deck.length) {
-            throw new Error('Invalid card IDs in deck');
+        // Resolve player 2's cards
+        let player2Cards: ICardDefinition[];
+        if (typeof player2Deck === 'string') {
+            // It's a deck ID
+            const deck = this.deckDefinitions.get(player2Deck);
+            if (!deck) {
+                throw new Error(`Deck with ID '${player2Deck}' not found`);
+            }
+            player2Cards = deck.cardIds.map(id => this.cardDefinitions.get(id)).filter(Boolean) as ICardDefinition[];
+            if (player2Cards.length !== deck.cardIds.length) {
+                throw new Error('Invalid card IDs in deck');
+            }
+        } else {
+            // It's an array of card IDs
+            player2Cards = player2Deck.map(id => this.cardDefinitions.get(id)).filter(Boolean) as ICardDefinition[];
+            if (player2Cards.length !== player2Deck.length) {
+                throw new Error('Invalid card IDs in deck');
+            }
         }
 
         engine.startGame(player1Cards, player2Cards);
@@ -150,6 +231,14 @@ export class GameSessionManager {
     }
 
     /**
+     * Gets available deck definitions.
+     * @returns Map of deck definitions
+     */
+    getDeckDefinitions(): Map<string, IDeckDefinition> {
+        return new Map(this.deckDefinitions);
+    }
+
+    /**
      * Marks a game session as completed.
      * @param gameId The game ID
      */
@@ -207,6 +296,14 @@ export class GameSessionManager {
      */
     reloadCardDefinitions(dataDirectory?: string): void {
         this.loadCardDefinitions(dataDirectory);
+    }
+
+    /**
+     * Reloads deck definitions from data files.
+     * @param dataDirectory Optional path to the data directory
+     */
+    reloadDeckDefinitions(dataDirectory?: string): void {
+        this.deckDefinitions = this.loadDeckDefinitions(dataDirectory ? path.join(dataDirectory, 'decks') : undefined);
     }
 
     /**

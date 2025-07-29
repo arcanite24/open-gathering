@@ -407,6 +407,7 @@ export class CLI {
         console.log();
         console.log('🎮 Game Management:');
         console.log('  new-game [deck1] [deck2]  - Start a new game with specified decks (default: basics)');
+        console.log('                            Decks can be either predefined sets or deck definitions from data/decks');
         console.log('  scenario [name]           - Load a predefined scenario or list available scenarios');
         console.log();
         console.log('📊 Game State:');
@@ -436,15 +437,61 @@ export class CLI {
     }
 
     private async loadDeck(deckName: string): Promise<ICardDefinition[]> {
-        const deckPath = path.join(__dirname, '../../data/sets', `${deckName}.json`);
+        // First, try to load as a deck ID from the decks directory
+        const deckPath = path.join(__dirname, '../../data/decks', `${deckName}.json`);
 
-        if (!fs.existsSync(deckPath)) {
-            throw new Error(`Deck file not found: ${deckPath}`);
+        if (fs.existsSync(deckPath)) {
+            try {
+                const deckDefinition = JSON.parse(fs.readFileSync(deckPath, 'utf8'));
+                if (deckDefinition && deckDefinition.cardIds && Array.isArray(deckDefinition.cardIds)) {
+                    // Load card definitions for each card ID in the deck
+                    const cardDefinitions: ICardDefinition[] = [];
+                    for (const cardId of deckDefinition.cardIds) {
+                        const cardPath = path.join(__dirname, '../../data/sets');
+                        const cardFiles = fs.readdirSync(cardPath);
+                        let cardFound = false;
+
+                        for (const file of cardFiles) {
+                            if (file.endsWith('.json')) {
+                                try {
+                                    const cards = JSON.parse(fs.readFileSync(path.join(cardPath, file), 'utf8'));
+                                    if (Array.isArray(cards)) {
+                                        const card = cards.find((c: any) => c.id === cardId);
+                                        if (card) {
+                                            cardDefinitions.push(card);
+                                            cardFound = true;
+                                            break;
+                                        }
+                                    }
+                                } catch (error) {
+                                    // Continue to next file if this one fails
+                                }
+                            }
+                        }
+
+                        if (!cardFound) {
+                            throw new Error(`Card with ID '${cardId}' not found in any card set`);
+                        }
+                    }
+
+                    return cardDefinitions;
+                }
+            } catch (error) {
+                console.warn(`Failed to load deck from ${deckPath}: ${error}`);
+                // Fall through to the original behavior
+            }
         }
 
-        const cards = JSON.parse(fs.readFileSync(deckPath, 'utf8'));
+        // Fall back to the original behavior - load from sets directory
+        const setPath = path.join(__dirname, '../../data/sets', `${deckName}.json`);
+
+        if (!fs.existsSync(setPath)) {
+            throw new Error(`Deck file not found: ${setPath}`);
+        }
+
+        const cards = JSON.parse(fs.readFileSync(setPath, 'utf8'));
         if (!Array.isArray(cards) || cards.length === 0) {
-            throw new Error(`Invalid deck file: ${deckPath}`);
+            throw new Error(`Invalid deck file: ${setPath}`);
         }
 
         const deck: ICardDefinition[] = [];

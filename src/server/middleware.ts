@@ -9,24 +9,38 @@ import { ErrorResponse } from './types';
 export const createRateLimit = (
     windowMs: number = 15 * 60 * 1000, // 15 minutes
     max: number = 100, // limit each IP to 100 requests per windowMs
-    message: string = 'Too many requests from this IP, please try again later.'
+    message: string = 'Too many requests from this IP, please try again later.',
+    limiterName: string = 'general'
 ) => {
     return rateLimit({
         windowMs,
         max,
         message: {
             error: message,
-            status: 429
+            status: 429,
+            limiter: limiterName
         } as ErrorResponse,
         standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
         legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+        handler: (req, res, next, options) => {
+            const ip = req.ip || 'unknown';
+            const userAgent = req.get('User-Agent') || 'Unknown';
+            const path = req.path;
+            const method = req.method;
+            console.warn(`${new Date().toISOString()} - RATE LIMIT HIT - ${limiterName} - ${method} ${path} - IP: ${ip} - User-Agent: ${userAgent} - Limit: ${options.max} per ${options.windowMs / 60000} minutes`);
+            res.status(429).json({
+                error: message,
+                status: 429,
+                limiter: limiterName
+            });
+        }
     });
 };
 
 /**
  * General API rate limiter (100 requests per 15 minutes per IP).
  */
-export const apiRateLimit = createRateLimit();
+export const apiRateLimit = createRateLimit(undefined, undefined, undefined, 'api-general');
 
 /**
  * Stricter rate limiter for game creation (10 games per hour per IP).
@@ -34,7 +48,8 @@ export const apiRateLimit = createRateLimit();
 export const gameCreationRateLimit = createRateLimit(
     60 * 60 * 1000, // 1 hour
     10,
-    'Too many games created from this IP, please try again later.'
+    'Too many games created from this IP, please try again later.',
+    'game-creation'
 );
 
 /**
@@ -43,7 +58,8 @@ export const gameCreationRateLimit = createRateLimit(
 export const actionRateLimit = createRateLimit(
     60 * 1000, // 1 minute
     1000,
-    'Too many actions submitted, please slow down.'
+    'Too many actions submitted, please slow down.',
+    'action-submission'
 );
 
 /**
